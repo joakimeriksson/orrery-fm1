@@ -43,6 +43,14 @@ The toolchain lives in fm1-harbor (Docker on this Mac; the compiler is emulated,
   SAVE 9, ARP 10, SEQ 11, PLAY 12, REC 13; note keys 14 + k). The emulator check of this module:
   `python3 tests/integration/seventies_emu.py` here (fm1-harbor's own `tests/emu_test.py` has a `seventies` case
   only on its `proc-snapshot` branch).
+- Hardware differs from the emulator: on an SMK-37 Pro the main core's worst block is 75 .. 79 % where fm1-emu says
+  57 .. 65 %, and fm1-emu's second-core figure (2 %) is not the device's (17 .. 19 %): judge load and the split
+  between the cores on the device. It can be driven over USB-MIDI without touching it (channel 10: note 43 starts and
+  stops the band, 42 the next setup) and read with `uv run --with python-rtmidi tools/dock.py modules` / `logs` in
+  fm1-harbor-proc. Deploying over a module already there has crashed the dock (delete it first), and after a crash
+  the dock keeps the second core off until power-off: check `modules` says 2 cores before trusting a number.
+  `tools/prof/` is a timing build of the module (each part and bus in the device's log every five seconds while
+  the band runs): build it in place of `module`, deploy `build/modules/prof.dock`.
 - Measure, do not guess: the emulator log prints the module's worst block in percent; a check on the Mac for
   every unit before a screen; a spectrogram for anything that should sound a certain way. Under a held pad an
   attack detector finds little: read a band's time as the periodicity of the twice-differenced envelope.

@@ -385,3 +385,35 @@ down, all at their bars.
 
 Open: the gestures live in the main loop, so no native test plays them (only the renders and the emulator); their
 timing is the main loop's (a pass late at most), not sample-exact. Not heard by anyone yet. Nothing committed.
+
+## 2026-11-14: toward a release: fm1-dock's main, the first commit, and the first run on hardware (owner: "please do all these steps!", then "maybe we can optimize something? And what about using all the pad for something?")
+
+Done. fm1-harbor-proc: everything that was uncommitted there is on branch `proc-snapshot` (two commits: the
+engines; the seqdock / host reverb / flash IDs / SID / Scintilla work tree as it was). Branch `seventies-engines`
+is origin/main plus the three engine modules with their checks (ARP 2600 and EMINENT hand REVERB to the host only
+under `HB_HAS_FX_REVERB`: main has no host reverb) and the build's speed-ups (`--only`, one container). Nothing
+pushed. Here: the module no longer names `fx_reverb` unless the header defines `HB_HAS_FX_REVERB` (main's hb_host_t
+has `board` and `key_base` where the snapshot's had `fx_reverb`: the old module.dock would have called a number);
+LICENSE, LICENSING.md, LICENSES/; README (build against main, the pads, State); the first commit. Built on main:
+module.dock 174856 B, 16 native suites, the integration test and all fifteen setups in fm1-emu pass (0 overruns,
+worst 45.5 .. 65.4 %).
+
+Found on hardware (the owner's SMK-37 Pro, dock built from main, over USB-MIDI: scratch scripts, pads 42 / 43):
+- All fifteen setups play. Three minutes through them with a lead line: 42 overruns (PULSE 1, OCTAVES 9, MAGNET 18,
+  STORM 1, ORBIT 1, COMET 12), worst block 114 %. Ten-second runs of MAGNET and COMET alone: 75 .. 79 %, no overrun;
+  a lead from the band's first beat: 101 %, one overrun. Not the settings save (three saves while playing: none).
+- One core (tools/prof, permille of a block, average / worst): TIDES total 640/1117, mixer stage 243/306, bass
+  91/103, lead 80/89 (idle), strings 106/217, drums 0/10, box 73/396, echo 17/21, reverb 38/40; CAVERN total
+  599..755, strings 93 .. 226, the rest alike. The mixer stage is the same 24 .. 25 % everywhere.
+- fm1-emu is not the device: it says mixer stage 16 %, lead 5.6 %, bass 5.7 %, box 1.3 %, and the second core's job
+  2 % (device: 17 .. 19 %, worst 28 .. 43 %). The box on the second core as well (`-DSEVENTIES_CORE1=0x13`) made
+  fm1-emu's worst block worse (76 .. 82 %): not a judgement the emulator can make.
+- Deploying over the module already deployed crashed the dock twice (pc 0x00003598, pc 0x02095f1a in module 5);
+  after a crash it runs one core until power-off, where SEVENTIES is stopped as too slow in a fast setup. Left: the
+  regular build deployed, CS-1 selected, the second core off until the owner powers it off and on.
+
+Open, in order: (1) with both cores back, the split (`SEVENTIES_CORE1`: the box, perhaps the drums, on core 1) and
+what a lead note's start costs on core 0; (2) the mixer: 45 instructions a frame a track, five tracks always mixed
+(a silent track could be skipped, the sends hoisted); (3) the idle lead's 8 %; (4) no tag before the device plays
+three minutes without an overrun. The pads: all sixteen are taken (README), 9 .. 13 only the five old sounds; a
+proposal to the owner, not built: 9 .. 16 as the setup's own sounds and gestures.

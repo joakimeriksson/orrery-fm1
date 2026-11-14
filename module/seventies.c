@@ -1726,7 +1726,10 @@ static int init(const hb_host_t *h)
         /* the lead and the bass on core 1, the rest here: measured best with the Synthex playing a melody over
          * LASER (58.5 % of a block here; strings and lead there 73 %, the lead alone there 65 %, lead, bass and
          * drums there 60.4 %); the one Eminent and the one Synthex each stay on their core */
-        c.parallel_mask = (uint8_t)((1u << T_LEAD) | (1u << T_BASS));
+#ifndef SEVENTIES_CORE1
+#define SEVENTIES_CORE1 ((1u << T_LEAD) | (1u << T_BASS))
+#endif
+        c.parallel_mask = (uint8_t)(SEVENTIES_CORE1);
     } else c.parallel_track = 0xffu;
     c.bank = &first_bank;
     c.bpm_q8 = (uint16_t)(set.tempo * 256u);

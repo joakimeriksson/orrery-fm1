@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""M3-05: build each stress variant of SEVENTIES (tests/stress/stress_common.h) into the seqdock image and play it
+"""M3-05: build each stress variant of SEVENTIES (tests/stress/stress_common.h) into fm1-dock's image and play it
 in fm1-emu, recording the module's worst block, overruns and audio.
 
     python3 tests/stress/run_stress.py [1 2 3 4] [--harbor ../fm1-harbor-proc]
@@ -27,7 +27,8 @@ HARBOR_PY = Path.home() / "work" / "fm1-harbor" / ".venv" / "bin" / "python3"
 def build(harbor, variant):
     env = dict(os.environ, PYTHON=str(HARBOR_PY), HB_MOUNT=str(ROOT))
     mod = ROOT / "tests" / "stress" / f"stress{variant}"
-    r = subprocess.run(["./build.sh", "--no-package", "--seqdock", "--only", "--modules", f"cs1,scintilla,{mod}"],
+    only = ["--only"] if "--only" in (harbor / "tools" / "build.py").read_text() else []   # (not on fm1-dock's main yet)
+    r = subprocess.run(["./build.sh", "--no-package", *only, "--modules", f"cs1,scintilla,{mod}"],
                        cwd=harbor, env=env, capture_output=True, text=True)
     line = next((l for l in r.stdout.splitlines() if l.startswith("module SEVENTIES")), "")
     if r.returncode or not line:
@@ -37,7 +38,7 @@ def build(harbor, variant):
 
 def run(harbor, ms, out):
     out.mkdir(parents=True, exist_ok=True)
-    image = harbor / "build" / "seqdock_xip.bin"
+    image = harbor / "build" / "fm1-dock_xip.bin"
     keys = "700:8,750:8^,900:e6:3,1100:8,1150:8^"      # the picker: SEVENTIES is slot 3 after CS-1 and SCINTILLA
     r = subprocess.run([sys.executable, str(harbor / "tools" / "dock.py"), "emu", "--bin", str(image), "--ms", str(ms),
                         "--keys", keys, "--out", str(out)], cwd=harbor, capture_output=True, text=True)

@@ -47,6 +47,12 @@ before claiming work. Progress and handoffs live in `WORK.json` and `work/agents
 | **ARP** | all notes off (on FX SEQ: how the event is played). **SAVE**: the settings now (else two seconds after a change). **HOME** held 1.5 s: fm1-dock's list |
 | **keys** | the lead; OCT−/OCT+ its octave. MIDI notes play the lead too, PC picks its patch, CC 74 its cutoff |
 
+**On an SMK-37** (or any controller: these are MIDI). The pads, channel 10 notes 36..51: 1..5 mute the bass, the
+lead, the strings, the drums and the effects box; 6 unmutes them all; 7 the next setup; 8 starts and stops the band;
+9..13 hits of the effects box (DROP, PING, BUBBLE, CHIRP, METAL); 14 a wind gust while held; 15 and 16 two glass
+bells. CC 70..73 are the levels of the strings, the bass, the drums and the effects box, CC 7 the lead's, CC 1 (the
+mod wheel) closes a low-pass over everything, CC 64 holds the lead.
+
 ## The setups
 
 Fifteen scenes to play a lead over, in the manner of the French electronic records of 1976-86 (none copied, and no
@@ -107,6 +113,15 @@ itself against a host of its own (`tools/render_setups.c`: no Docker, no emulato
 setup and each of its parts alone, and prints every part's level, its loudest 50 ms, its pitch classes and where
 the mix's energy sits. It is how the setups were balanced, and how a wrong note shows.
 
+## State
+
+A preview, not a release yet. It builds against fm1-dock's main, and in fm1-emu every setup plays without an overrun
+(worst block 46 .. 65 % of the time it has). On hardware (an SMK-37 Pro, 2026-11-14) it runs and all fifteen setups
+play, but the main core is at 75 .. 79 % in the fast setups and a busy moment (a lead note on a chord change) can
+take a block over: 42 overruns in three minutes of playing through all fifteen. Measured there on one core, in
+percent of a block: the mixer with its buses 25, the strings 9 .. 23, the bass 9, the lead 8 idle, the effects box
+4 .. 7 (40 at a gesture's start). The work left is there: the split between the cores, and the mixer.
+
 ## Build
 
 In an [fm1-dock](https://github.com/joakimeriksson/fm1-dock) checkout, with its toolchain (Docker on a Mac), and
@@ -117,7 +132,7 @@ this repository beside it:
 
 gives `build/modules/module.dock`, the module to deploy (`tools/dock.py deploy build/modules/module.dock`, or
 fm1-dock's page: your own module over USB), and `build/fm1-dock_xip.bin` for fm1-emu with the module in its list.
-The module needs a dock with indexed banks and the second core (fm1-dock 0.8 or later) on an FM-1 or an SMK-37.
+The module is written for fm1-dock 0.8 or later on an FM-1 or an SMK-37 (the second core, indexed banks).
 
 Checks, none of which needs the toolchain: `python3 tests/run_native.py` (the units, with the sanitizers) and
 `tools/listen.py` above. With the image built: `python3 tests/integration/seventies_emu.py` (the module in fm1-emu:
