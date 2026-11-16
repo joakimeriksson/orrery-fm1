@@ -159,9 +159,39 @@ static int backend_failure_flushes_ownership(void)
     CHECK(send(&f,MD_EVENT_NOTE_ON,3,0,64)==MD_OK);
     CHECK(send(&f,MD_EVENT_NOTE_OFF,3,0,0)==MD_OK && !f.state[0].voice_count);return 0;
 }
+/* With a sink the router's calls to an instrument go there (an event, NULL for a reset) and count as done: the
+ * session records them while it routes a block and plays them later. The books are kept as ever. */
+static struct {uint8_t track,reset;md_event_t event;} sunk[8];
+static uint32_t sunk_count;
+static int sink(void *context,uint8_t track,const md_event_t *e)
+{
+    (void)context;
+    if (sunk_count<8u) {sunk[sunk_count].track=track;sunk[sunk_count].reset=!e;if (e) sunk[sunk_count].event=*e;}
+    sunk_count++;return MD_OK;
+}
+static int sink_takes_the_instrument_calls(void)
+{
+    fixture_t f;CHECK(!init(&f,0));
+    uint32_t events=f.state[0].event_calls,resets=f.state[0].reset_calls;
+    f.router.sink=sink;f.router.sink_context=&f;sunk_count=0;
+    CHECK(send(&f,MD_EVENT_NOTE_ON,1,0,60)==MD_OK);
+    CHECK(sunk_count==1 && !sunk[0].reset && sunk[0].track==0 && sunk[0].event.kind==MD_EVENT_NOTE_ON &&
+          sunk[0].event.data.note.key==60);
+    CHECK(md_router_owned_count(&f.router)==1 && !f.state[0].voice_count && f.state[0].event_calls==events);
+    CHECK(send(&f,MD_EVENT_NOTE_OFF,1,0,0)==MD_OK && sunk_count==2 && sunk[1].event.kind==MD_EVENT_NOTE_OFF);
+    CHECK(send(&f,MD_EVENT_NOTE_ON,2,0,62)==MD_OK && sunk_count==3);
+    md_event_t panic={.kind=MD_EVENT_PANIC,.track=0,.source=MD_SOURCE_NONE};
+    CHECK(md_router_event(&f.router,&panic)==MD_OK);
+    CHECK(sunk_count==4 && sunk[3].reset && sunk[3].track==0 && !md_router_owned_count(&f.router));
+    CHECK(f.state[0].reset_calls==resets && f.state[0].event_calls==events);   /* the instrument never touched */
+    f.router.sink=NULL;                                                         /* and directly again */
+    CHECK(send(&f,MD_EVENT_NOTE_ON,3,0,64)==MD_OK && f.state[0].voice_count==1 && sunk_count==4);
+    return 0;
+}
 int main(void)
 {
     RUN(duplicate_pitch_and_token_lifetime);RUN(mono_priority_and_resume);RUN(sustain_and_source_release);
     RUN(admission_capacity_and_wrap);RUN(track_isolation_and_input_errors);RUN(mono_legato_replaces_physical_token);RUN(transient_capacity_preserves_pitched_owners);RUN(backend_failure_flushes_ownership);
+    RUN(sink_takes_the_instrument_calls);
     return 0;
 }

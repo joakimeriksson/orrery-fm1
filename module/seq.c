@@ -25,7 +25,7 @@ int md_seq_bank_validate(const md_seq_bank_t *b)
             if(m->mode==MD_PATTERN_DRUM){
                 if((s->payload & 0xc000u) || (s->flags & (MD_STEP_TIE|MD_STEP_SLIDE)))return MD_ERR_RANGE;
             }else if(m->mode==MD_PATTERN_MONO){if(s->payload>127)return MD_ERR_RANGE;}
-            else if((s->payload & 255u)>127 || (s->payload>>8)>=MD_CHORD_COUNT || (s->flags & MD_STEP_SLIDE))return MD_ERR_RANGE;
+            else if((s->payload & 255u)>127 || ((s->payload>>8)&7u)>=MD_CHORD_COUNT || (s->payload & 0xc000u) || (s->flags & MD_STEP_SLIDE))return MD_ERR_RANGE;
         }
     }
     for(uint32_t i=0;i<b->lock_count;i++){
@@ -242,7 +242,9 @@ static int triggers(md_seq_t *s,uint8_t track,const step_plan_t *p)
     int32_t root=(int32_t)(p->step.payload & 255u)+(int32_t)p->transpose;
     if(p->mode==MD_PATTERN_MONO)return trigger_note(s,track,p,root);
     for(uint32_t i=0;i<4;i++){
-        int status=trigger_note(s,track,p,root+chord[p->step.payload>>8][i]);if(status)return status;
+        /* MD_CHORD_RAISE: tone i (1..3) an octave up, an open voicing (the root stays) */
+        int32_t up=i && (p->step.payload & (1u<<(10u+i)))?12:0;
+        int status=trigger_note(s,track,p,root+chord[(p->step.payload>>8)&7u][i]+up);if(status)return status;
     }
     return MD_OK;
 }

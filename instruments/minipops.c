@@ -91,7 +91,7 @@ static int event(void *state,const md_event_t *e)
     }
     mp_trigger(&s->engine,e->data.hit.voice,vel);return MD_OK;
 }
-static void render(void *state,int32_t *out,uint32_t frames){mp_render(&((md_minipops_state_t *)state)->engine,out,frames);}
+MD_HOT static void render(void *state,int32_t *out,uint32_t frames){mp_render(&((md_minipops_state_t *)state)->engine,out,frames);}
 const md_instrument_desc_t MD_MINIPOPS={
     .processor={.id=MD_INSTRUMENT_MINIPOPS,.api_version=MD_API_VERSION,.settings_version=MD_MINIPOPS_SETTINGS_VERSION,
         .name="MINIPOPS",.state_bytes=sizeof(md_minipops_state_t),.state_alignment=_Alignof(md_minipops_state_t),

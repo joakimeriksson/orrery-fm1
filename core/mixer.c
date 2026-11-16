@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "mixer.h"
 #include "processor_internal.h"
+#include "hot.h"
 #include <string.h>
 
 const md_param_desc_t md_mixer_track_params[4] = {
@@ -10,21 +11,15 @@ const md_param_desc_t md_mixer_track_params[4] = {
     {MD_MIX_REVERB_SEND, MD_PARAM_AUTOMATABLE | MD_PARAM_SMOOTH, "Reverb send", 0, 32767, 0, MD_UNIT_Q15, NULL, 0},
 };
 
-static int32_t clamp(md_mixer_t *m, int32_t x)
-{
-    if (x > MD_MIX_LIMIT) { m->meters.clamped++; return MD_MIX_LIMIT; }
-    if (x < -MD_MIX_LIMIT) { m->meters.clamped++; return -MD_MIX_LIMIT; }
-    return x;
-}
-static int32_t magnitude(int32_t x) { return x < 0 ? -x : x; } /* only for clamped values */
+MD_INLINE int32_t magnitude(int32_t x) { return x < 0 ? -x : x; } /* only for clamped values */
 /* Any int32 x, gain Q23 within 0..2^23: product within 2^54 and |result| <= |x|, so it fits int32.
  * Arithmetic right shift, as the engines' MUL macro relies on. */
-static int32_t gain_apply(int32_t x, int32_t gain_q23)
+MD_INLINE int32_t gain_apply(int32_t x, int32_t gain_q23)
 {
     return (int32_t)(((int64_t)x * gain_q23) >> 23);
 }
 /* Symmetric one-pole step; snaps when the remaining distance rounds to zero. */
-static int32_t smooth(int32_t current, int32_t target)
+MD_INLINE int32_t smooth(int32_t current, int32_t target)
 {
     int32_t d = target - current;
     int32_t step = d >= 0 ? d >> MD_MIX_SMOOTH_SHIFT : -((-d) >> MD_MIX_SMOOTH_SHIFT);
@@ -265,10 +260,116 @@ int md_mixer_reset(md_mixer_t *m)
     return MD_OK;
 }
 
+/* ---- the loops over the frames (MD_HOT, hot.h): each keeps what it counts in registers and calls nothing */
+
+/* n samples held within the limit; how many were over */
+MD_HOT static uint32_t mix_clamp(int32_t *p, uint32_t n)
+{
+    uint32_t over = 0;
+    for (uint32_t i = 0; i < n; i++) {
+        int32_t x = p[i];
+        if (x > MD_MIX_LIMIT) { p[i] = MD_MIX_LIMIT; over++; }
+        else if (x < -MD_MIX_LIMIT) { p[i] = -MD_MIX_LIMIT; over++; }
+    }
+    return over;
+}
+/* One frame of a track: its gains, the clamp, into the dry sum and the sends it has, its peak.
+ * |sample x gain| <= |sample| < 2^31: the product fits int64 and the result int32, then it is clamped.
+ * Each track adds at most 2^24 per accumulator: the tracks together stay below 2^27.
+ * A silent send costs nothing (its gain is exactly zero once settled). */
+#define MIX_FRAME() do { \
+        int32_t l = gain_apply(buf[i], g0), r = gain_apply(buf[i + 1], g1); \
+        if (l > MD_MIX_LIMIT) { l = MD_MIX_LIMIT; clamped++; } else if (l < -MD_MIX_LIMIT) { l = -MD_MIX_LIMIT; clamped++; } \
+        if (r > MD_MIX_LIMIT) { r = MD_MIX_LIMIT; clamped++; } else if (r < -MD_MIX_LIMIT) { r = -MD_MIX_LIMIT; clamped++; } \
+        dry[i] += l; \
+        dry[i + 1] += r; \
+        if (g2) { echo[i] += gain_apply(l, g2); echo[i + 1] += gain_apply(r, g2); } \
+        if (g3) { reverb[i] += gain_apply(l, g3); reverb[i + 1] += gain_apply(r, g3); } \
+        if (magnitude(l) > peak) peak = magnitude(l); \
+        if (magnitude(r) > peak) peak = magnitude(r); \
+    } while (0)
+MD_HOT static void mix_track(md_mixer_t *m, md_mixer_track_t *t, const int32_t *buf, uint32_t index, uint32_t lane)
+{
+    const uint32_t n = 2u * m->frames;
+    int32_t *const dry = lane ? m->dry1 : m->dry;
+    int32_t *const echo = lane ? m->send1[MD_MIX_BUS_ECHO] : m->send[MD_MIX_BUS_ECHO];
+    int32_t *const reverb = lane ? m->send1[MD_MIX_BUS_REVERB] : m->send[MD_MIX_BUS_REVERB];
+    int32_t g0 = t->gain[0], g1 = t->gain[1], g2 = t->gain[2], g3 = t->gain[3];
+    const int32_t t0 = t->gain_target[0], t1 = t->gain_target[1], t2 = t->gain_target[2], t3 = t->gain_target[3];
+    int32_t peak = m->meters.track_peak[index];
+    uint32_t clamped = 0, i;
+    if (g0 != t0 || g1 != t1 || g2 != t2 || g3 != t3) {   /* moving: every gain a step a frame, for the block */
+        for (i = 0; i < n; i += 2) {
+            g0 = smooth(g0, t0); g1 = smooth(g1, t1); g2 = smooth(g2, t2); g3 = smooth(g3, t3);
+            MIX_FRAME();
+        }
+        t->gain[0] = g0; t->gain[1] = g1; t->gain[2] = g2; t->gain[3] = g3;
+    } else
+        for (i = 0; i < n; i += 2) MIX_FRAME();
+    m->meters.track_peak[index] = peak;
+    if (lane) m->clamped1 += clamped; else m->meters.clamped += clamped;
+}
+/* the second lane's sums into the first's */
+MD_HOT static void mix_join(md_mixer_t *m)
+{
+    const uint32_t n = 2u * m->frames;
+    for (uint32_t i = 0; i < n; i++) {
+        m->dry[i] += m->dry1[i];
+        m->send[MD_MIX_BUS_ECHO][i] += m->send1[MD_MIX_BUS_ECHO][i];
+        m->send[MD_MIX_BUS_REVERB][i] += m->send1[MD_MIX_BUS_REVERB][i];
+    }
+}
+/* a bus's wet signal into the dry sum, at its return level */
+MD_HOT static void mix_return(md_mixer_t *m, uint32_t b)
+{
+    const uint32_t n = 2u * m->frames;
+    const int32_t *const wet = m->wet, target = m->return_target[b];
+    int32_t *const dry = m->dry;
+    int32_t gain = m->return_gain[b], peak = m->meters.return_peak[b];
+    uint32_t clamped = 0;
+    const int moving = gain != target;
+    for (uint32_t i = 0; i < n; i += 2) {
+        if (moving) gain = smooth(gain, target);
+        for (uint32_t c = 0; c < 2; c++) {
+            int32_t v = wet[i + c];
+            if (v > MD_MIX_LIMIT) { v = MD_MIX_LIMIT; clamped++; } else if (v < -MD_MIX_LIMIT) { v = -MD_MIX_LIMIT; clamped++; }
+            v = gain_apply(v, gain);
+            dry[i + c] += v;
+            if (magnitude(v) > peak) peak = magnitude(v);
+        }
+    }
+    m->return_gain[b] = gain;
+    m->meters.return_peak[b] = peak;
+    m->meters.clamped += clamped;
+}
+/* the sum into out, saturated: clamped here unless the master did it (clamp: one pass fewer, the same result) */
+MD_HOT static void mix_out(md_mixer_t *m, int32_t *out, int clamp_here)
+{
+    const uint32_t n = 2u * m->frames;
+    const int32_t *const dry = m->dry;
+    int32_t peak = m->meters.master_peak;
+    uint32_t clamped = 0, clipped = 0;
+    for (uint32_t i = 0; i < n; i++) {
+        int32_t v = dry[i];
+        if (clamp_here) {
+            if (v > MD_MIX_LIMIT) { v = MD_MIX_LIMIT; clamped++; } else if (v < -MD_MIX_LIMIT) { v = -MD_MIX_LIMIT; clamped++; }
+        }
+        if (magnitude(v) > peak) peak = magnitude(v);
+        if (v > 32767) { v = 32767; clipped++; }
+        else if (v < -32767) { v = -32767; clipped++; }
+        out[i] += v;
+    }
+    m->meters.master_peak = peak;
+    m->meters.clamped += clamped;
+    m->meters.clipped += clipped;
+}
+
 /* In-place insert with bypass crossfade. An idle slot (bypass ramp at zero) is
  * skipped and reset when it is enabled again, so dormant history cannot return. */
-static void slot_process(md_mixer_t *m, md_mixer_slot_t *s, int32_t *buf, uint32_t frames)
+static void slot_process(md_mixer_t *m, md_mixer_slot_t *s, int32_t *buf, uint32_t frames, uint32_t lane)
 {
+    int32_t *const xfade = lane ? m->xfade1 : m->xfade;
+    uint32_t *const clamped = lane ? &m->clamped1 : &m->meters.clamped;
     if (!s->effect) return;
     if (!s->active) {
         if (!s->wet_target) return;
@@ -277,21 +378,21 @@ static void slot_process(md_mixer_t *m, md_mixer_slot_t *s, int32_t *buf, uint32
     }
     uint32_t n = 2u * frames;
     int fading = s->wet != MD_MIX_UNITY_Q23 || s->wet_target != MD_MIX_UNITY_Q23;
-    if (fading) memcpy(m->xfade, buf, n * sizeof *buf);
+    if (fading) memcpy(xfade, buf, n * sizeof *buf);
     md_effect_process_replace(s->effect, buf, frames);
-    for (uint32_t i = 0; i < n; i++) buf[i] = clamp(m, buf[i]);
+    *clamped += MD_FAR(mix_clamp)(buf, n);
     if (!fading) return;
     for (uint32_t i = 0; i < n; i += 2) {
         s->wet = smooth(s->wet, s->wet_target);
         for (uint32_t c = 0; c < 2; c++) {
-            int32_t dry = m->xfade[i + c];
+            int32_t dry = xfade[i + c];
             buf[i + c] = dry + gain_apply(buf[i + c] - dry, s->wet);
         }
     }
     if (!s->wet && !s->wet_target) s->active = 0;
 }
 
-static void track_process(md_mixer_t *m, uint32_t index, int32_t *buf)
+static void track_process(md_mixer_t *m, uint32_t index, int32_t *buf, uint32_t lane)
 {
     md_mixer_track_t *t = &m->track[index];
     uint32_t n = 2u * m->frames;
@@ -303,31 +404,11 @@ static void track_process(md_mixer_t *m, uint32_t index, int32_t *buf)
     for (uint32_t s = 0; s < MD_MIX_INSERTS; s++)
         inserts |= t->insert[s].effect && (t->insert[s].active || t->insert[s].wet_target);
     if (inserts) {
-        for (uint32_t i = 0; i < n; i++) buf[i] = clamp(m, buf[i]);
-        for (uint32_t s = 0; s < MD_MIX_INSERTS; s++) slot_process(m, &t->insert[s], buf, m->frames);
+        uint32_t over = MD_FAR(mix_clamp)(buf, n);
+        if (lane) m->clamped1 += over; else m->meters.clamped += over;
+        for (uint32_t s = 0; s < MD_MIX_INSERTS; s++) slot_process(m, &t->insert[s], buf, m->frames, lane);
     }
-    int32_t peak = m->meters.track_peak[index];
-    int moving = memcmp(t->gain, t->gain_target, sizeof t->gain) != 0;
-    for (uint32_t i = 0; i < n; i += 2) {
-        if (moving)
-            for (uint32_t g = 0; g < 4; g++) t->gain[g] = smooth(t->gain[g], t->gain_target[g]);
-        /* |sample x gain| <= |sample| < 2^31: the product fits int64 and the result int32, then it is clamped */
-        int32_t l = clamp(m, gain_apply(buf[i], t->gain[0])), r = clamp(m, gain_apply(buf[i + 1], t->gain[1]));
-        /* Each track adds at most 2^24 per accumulator: four tracks stay below 2^26. */
-        m->dry[i] += l;
-        m->dry[i + 1] += r;
-        if (t->gain[2]) {   /* a silent send costs nothing (its gain is exactly zero once settled) */
-            m->send[MD_MIX_BUS_ECHO][i] += gain_apply(l, t->gain[2]);
-            m->send[MD_MIX_BUS_ECHO][i + 1] += gain_apply(r, t->gain[2]);
-        }
-        if (t->gain[3]) {
-            m->send[MD_MIX_BUS_REVERB][i] += gain_apply(l, t->gain[3]);
-            m->send[MD_MIX_BUS_REVERB][i + 1] += gain_apply(r, t->gain[3]);
-        }
-        if (magnitude(l) > peak) peak = magnitude(l);
-        if (magnitude(r) > peak) peak = magnitude(r);
-    }
-    m->meters.track_peak[index] = peak;
+    MD_FAR(mix_track)(m, t, buf, index, lane);
     t->added = 1;
 }
 static int track_idle(const md_mixer_track_t *t)
@@ -342,39 +423,35 @@ int md_mixer_begin(md_mixer_t *m, uint32_t frames)
     if (!m) return MD_ERR_ARGUMENT;
     if (m->in_span) return MD_ERR_STATE;
     if (!frames || frames > MD_MAX_RENDER_FRAMES) return MD_ERR_RANGE;
-    uint32_t bytes = 2u * frames * sizeof(int32_t);
-    memset(m->dry, 0, bytes);
-    for (uint32_t b = 0; b < MD_MIX_BUSES; b++) memset(m->send[b], 0, bytes);
+    md_clear32(m->dry, 2u * frames);
+    for (uint32_t b = 0; b < MD_MIX_BUSES; b++) md_clear32(m->send[b], 2u * frames);
     for (uint32_t t = 0; t < MD_TRACKS; t++) m->track[t].added = 0;
+    m->lane1 = 0;
+    m->clamped1 = 0;
     m->frames = frames;
     m->in_span = 1;
     return MD_OK;
 }
-int md_mixer_add_track(md_mixer_t *m, uint32_t track, int32_t *stereo)
+int md_mixer_add_track_lane(md_mixer_t *m, uint32_t track, int32_t *stereo, uint32_t lane)
 {
-    if (!track_ok(m, track) || !stereo) return MD_ERR_ARGUMENT;
+    if (!track_ok(m, track) || !stereo || lane >= MD_MIX_LANES) return MD_ERR_ARGUMENT;
     if (!m->in_span || m->track[track].added) return MD_ERR_STATE;
     if (md_internal_overlap(stereo, 2u * m->frames * sizeof *stereo, m, sizeof *m)) return MD_ERR_ARGUMENT;
-    track_process(m, track, stereo);
+    if (lane && !m->lane1) {              /* the lane's first track of the span: its sums start here */
+        md_clear32(m->dry1, 2u * m->frames);
+        for (uint32_t b = 0; b < MD_MIX_BUSES; b++) md_clear32(m->send1[b], 2u * m->frames);
+        m->lane1 = 1;
+    }
+    track_process(m, track, stereo, lane);
     return MD_OK;
 }
+int md_mixer_add_track(md_mixer_t *m, uint32_t track, int32_t *stereo) { return md_mixer_add_track_lane(m, track, stereo, 0); }
 static void bus_process(md_mixer_t *m, uint32_t b)
 {
-    uint32_t n = 2u * m->frames;
     if (!m->bus[b]) { m->return_gain[b] = m->return_target[b]; return; }
-    for (uint32_t i = 0; i < n; i++) m->send[b][i] = clamp(m, m->send[b][i]);
+    m->meters.clamped += MD_FAR(mix_clamp)(m->send[b], 2u * m->frames);
     md_effect_process_wet(m->bus[b], m->send[b], m->wet, m->frames);
-    int32_t peak = m->meters.return_peak[b];
-    int moving = m->return_gain[b] != m->return_target[b];
-    for (uint32_t i = 0; i < n; i += 2) {
-        if (moving) m->return_gain[b] = smooth(m->return_gain[b], m->return_target[b]);
-        for (uint32_t c = 0; c < 2; c++) {
-            int32_t v = gain_apply(clamp(m, m->wet[i + c]), m->return_gain[b]);
-            m->dry[i + c] += v;
-            if (magnitude(v) > peak) peak = magnitude(v);
-        }
-    }
-    m->meters.return_peak[b] = peak;
+    MD_FAR(mix_return)(m, b);
 }
 int md_mixer_finish(md_mixer_t *m, int32_t *out)
 {
@@ -384,26 +461,22 @@ int md_mixer_finish(md_mixer_t *m, int32_t *out)
     if (md_internal_overlap(out, n * sizeof *out, m, sizeof *m)) return MD_ERR_ARGUMENT;
     for (uint32_t t = 0; t < MD_TRACKS; t++) {
         if (m->track[t].added || track_idle(&m->track[t])) continue;
-        memset(m->silent, 0, n * sizeof *m->silent);
-        track_process(m, t, m->silent);
+        md_clear32(m->silent, n);
+        track_process(m, t, m->silent, 0);
+    }
+    if (m->lane1) {
+        MD_FAR(mix_join)(m);
+        m->meters.clamped += m->clamped1;
     }
     for (uint32_t b = 0; b < MD_MIX_BUSES; b++) bus_process(m, b);
     /* dry + returns: at most 4 * 2^24 + 2 * 2^24 < 2^27, clamped before the master (in the output loop itself
      * when the master slot is idle: one pass fewer, the same result). */
     int master = m->master.effect && (m->master.active || m->master.wet_target);
     if (master) {
-        for (uint32_t i = 0; i < n; i++) m->dry[i] = clamp(m, m->dry[i]);
-        slot_process(m, &m->master, m->dry, m->frames);
+        m->meters.clamped += MD_FAR(mix_clamp)(m->dry, n);
+        slot_process(m, &m->master, m->dry, m->frames, 0);
     }
-    int32_t peak = m->meters.master_peak;
-    for (uint32_t i = 0; i < n; i++) {
-        int32_t v = master ? m->dry[i] : clamp(m, m->dry[i]);
-        if (magnitude(v) > peak) peak = magnitude(v);
-        if (v > 32767) { v = 32767; m->meters.clipped++; }
-        else if (v < -32767) { v = -32767; m->meters.clipped++; }
-        out[i] += v;
-    }
-    m->meters.master_peak = peak;
+    MD_FAR(mix_out)(m, out, !master);
     m->in_span = 0;
     return MD_OK;
 }

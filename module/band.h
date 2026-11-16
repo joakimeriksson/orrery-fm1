@@ -3,7 +3,7 @@
 #define MD_BAND_H
 #include "module/seq.h"
 
-/* SEVENTIES' four parts as sequencer patterns (M3-04). The engines' own sequencers stay off:
+/* ORRERY' four parts as sequencer patterns (M3-04). The engines' own sequencers stay off:
  * the ARP 1601 sequences and the Mini Pops rhythms are converted here into editable patterns
  * for the one session clock, so the parts are synchronised by construction.
  *
@@ -25,6 +25,7 @@ enum { MD_BAND_CHORD_NONE, MD_BAND_CHORD_MIN, MD_BAND_CHORD_MAJ, MD_BAND_CHORD_M
        MD_BAND_CHORD_SUS2, MD_BAND_CHORD_SUS4, MD_BAND_CHORD_5TH, MD_BAND_CHORD_KINDS };
 #define MD_BAND_LINKS 8u
 
+#define MD_BAND_PHRASES 4u
 typedef struct { uint8_t root, kind; } md_band_chord_t;   /* root 0..11, kind MD_BAND_CHORD_* */
 /* The effect sequence: what the effects box plays by itself. An event is one hit of a kit sound.
  *   at      when, in eighths from the start: 0..127 over AMBIENT's sixteen bars (bar b, eighth e: 8 b + e);
@@ -37,7 +38,7 @@ typedef struct { uint8_t root, kind; } md_band_chord_t;   /* root 0..11, kind MD
  *   chance  how often it sounds, percent
  *   how     how it is played: ONCE, a hit on its step (in the pattern, sample-exact); or a gesture of several hits of
  *           the sound from its note through the scale: UP, DOWN, ARC (up and back), SPARKLE (at random). A gesture
- *           is not in the pattern: the module plays it from its main loop when the sequence comes to it (seventies.c:
+ *           is not in the pattern: the module plays it from its main loop when the sequence comes to it (orrery.c:
  *           fx_gestures), so md_band_build leaves the event out
  * Two events on one eighth: the first in the list plays. An event on a step of AMBIENT's run takes the step. */
 enum { MD_BAND_FX_ONCE, MD_BAND_FX_UP, MD_BAND_FX_DOWN, MD_BAND_FX_ARC, MD_BAND_FX_SPARKLE, MD_BAND_FX_HOWS };
@@ -56,7 +57,11 @@ typedef struct {
     uint8_t scene;                     /* MD_BAND_SCENE_*: AMBIENT plays chord[0..7], two bars each
                                         * (sixteen bars as two eight-bar links), a NONE a rest */
     uint8_t amb_arp;                   /* AMBIENT effects track: 1 a background run up the chord each second bar */
-    uint8_t phrase;                    /* AMBIENT: 1 the lead plays a slow phrase of its own on the chords (track 1) */
+    uint8_t phrase;                    /* AMBIENT: the lead plays a phrase of its own on the chords (track 1): 0 none,
+                                        * 1 HARP (long notes that rise, answer, climb, settle), 2 LONG TONES (one or two
+                                        * a chord, an octave lower: for a sound that swells), 3 BELLS (a few short high
+                                        * notes off the beat, left to ring), 4 CALLS (three notes and six bars of quiet) */
+    int8_t phrase_shift;               /* the phrase's keys, semitones (a sound that speaks octaves over its key: -12) */
     md_band_fx_event_t fx[MD_BAND_FX_EVENTS];   /* the effect sequence (both scenes) */
 } md_band_settings_t;
 

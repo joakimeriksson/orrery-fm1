@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SEVENTIES itself (module/seventies.c, included below) played offline on the Mac: a host of the module's own table
+/* ORRERY itself (module/orrery.c, included below) played offline on the Mac: a host of the module's own table
  * with a clock that follows the audio, so a setup can be heard and measured in a second, without Docker or the
  * emulator. The module's main loop (draw) runs between 64-frame blocks; everything renders on one core.
  *
@@ -15,8 +15,8 @@
 #include <string.h>
 #include "hb_module.h"
 #undef HB_DESC
-#define HB_DESC const hb_module_t seventies_module
-#include "module/seventies.c"
+#define HB_DESC const hb_module_t orrery_module
+#include "module/orrery.c"
 
 #define SR 44100u
 static uint64_t frames_done;
@@ -41,10 +41,10 @@ static int h_bank_save_n(uint32_t i, const void *p, uint32_t n) { (void)i; (void
 static void event(const char *e)
 {
     int up = e[strlen(e) - 1] == '^';
-    if (e[0] == 'b') seventies_module.ui((up ? HB_EV_BTN_UP : HB_EV_BTN_DOWN) | (uint32_t)atoi(e + 1), 0);
-    else if (e[0] == 'k') seventies_module.ui((up ? HB_EV_KEY_UP : HB_EV_KEY_DOWN) | (uint32_t)atoi(e + 1), up ? 0 : 100);
-    else if (e[0] == 'e') { const char *c = strchr(e, ':'); seventies_module.ui(HB_EV_ENC | (uint32_t)atoi(e + 1), c ? atoi(c + 1) : 1); }
-    else if (e[0] == 'm') { uint32_t v = (uint32_t)strtoul(e + 1, 0, 16); seventies_module.midi(v >> 16 & 255u, v >> 8 & 255u, v & 255u); }
+    if (e[0] == 'b') orrery_module.ui((up ? HB_EV_BTN_UP : HB_EV_BTN_DOWN) | (uint32_t)atoi(e + 1), 0);
+    else if (e[0] == 'k') orrery_module.ui((up ? HB_EV_KEY_UP : HB_EV_KEY_DOWN) | (uint32_t)atoi(e + 1), up ? 0 : 100);
+    else if (e[0] == 'e') { const char *c = strchr(e, ':'); orrery_module.ui(HB_EV_ENC | (uint32_t)atoi(e + 1), c ? atoi(c + 1) : 1); }
+    else if (e[0] == 'm') { uint32_t v = (uint32_t)strtoul(e + 1, 0, 16); orrery_module.midi(v >> 16 & 255u, v >> 8 & 255u, v & 255u); }
 }
 int main(int argc, char **argv)
 {
@@ -75,22 +75,22 @@ int main(int argc, char **argv)
     host.ms = h_ms; host.ticks = h_ticks; host.log = h_log; host.log_u32 = h_log_u32; host.fill = h_fill; host.text = h_text;
     host.led = h_led; host.rand = h_rand; host.load = h_load; host.save = h_save;
     host.bank_load_n = h_bank_load_n; host.bank_save_n = h_bank_save_n;
-    if (seventies_module.init(&host)) { fprintf(stderr, "init failed\n"); return 1; }
+    if (orrery_module.init(&host)) { fprintf(stderr, "init failed\n"); return 1; }
     pcm = malloc(sizeof(int16_t) * 2u * SR * seconds);
     if (!pcm) return 1;
-    seventies_module.draw(1);
-    if (setup) seventies_module.ui(HB_EV_ENC | HB_ENC_PRESETS, (int32_t)setup);
+    orrery_module.draw(1);
+    if (setup) orrery_module.ui(HB_EV_ENC | HB_ENC_PRESETS, (int32_t)setup);
     for (frames_done = 0; frames_done < (uint64_t)SR * seconds; frames_done += 64u) {
         uint32_t now = h_ms();
         if (!started && now >= 300u) {            /* the setup is sent: the mutes, then PLAY at half a second */
-            for (k = 0; part >= 0 && k < 5u; k++) if ((int)k != part) seventies_module.midi(0x99, 36u + k, 100);
+            for (k = 0; part >= 0 && k < 5u; k++) if ((int)k != part) orrery_module.midi(0x99, 36u + k, 100);
             started = 1;
         }
         if (started == 1 && now >= 500u) { if (!n_script || script[0].ms >= 500u) event("b12"); started = 2; }
         while (at < n_script && script[at].ms <= now) event(script[at++].e);
-        seventies_module.draw(0);
+        orrery_module.draw(0);
         memset(block, 0, sizeof block);
-        seventies_module.render(block, 64);
+        orrery_module.render(block, 64);
         for (k = 0; k < 128u; k++) {
             int32_t v = block[k];
             if ((v < 0 ? -v : v) > peak) peak = v < 0 ? -v : v;

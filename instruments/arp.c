@@ -183,7 +183,7 @@ static int event(void *state,const md_event_t *e)
     s->voice=(md_adapter_voice_t){e->token,e->data.note.key};
     arp_play(&s->engine,e->data.note.key,flags);return MD_OK;
 }
-static void render(void *state,int32_t *out,uint32_t frames){arp_render(&((md_arp_state_t *)state)->engine,out,frames);}
+MD_HOT static void render(void *state,int32_t *out,uint32_t frames){arp_render(&((md_arp_state_t *)state)->engine,out,frames);}
 const md_instrument_desc_t MD_ARP2600={
     .processor={.id=MD_INSTRUMENT_ARP2600,.api_version=MD_API_VERSION,.settings_version=MD_ARP_SETTINGS_VERSION,
         .name="ARP 2600",.state_bytes=sizeof(md_arp_state_t),.state_alignment=_Alignof(md_arp_state_t),

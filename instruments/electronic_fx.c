@@ -135,8 +135,8 @@ static void reset(void *state)
     md_electronic_fx_state_t *s=state;md_electronic_fx_settings_t settings=s->settings;
     memset(s,0,sizeof *s);s->settings=settings;s->rng=settings.seed;s->wind_rng=0x9e3779b9u; /* (the kit sound off) */
 }
-static uint32_t random_next(uint32_t *seed){*seed=*seed*1664525u+1013904223u;return *seed;}
-static int32_t sine(uint32_t phase)
+MD_INLINE uint32_t random_next(uint32_t *seed){*seed=*seed*1664525u+1013904223u;return *seed;}
+MD_INLINE int32_t sine(uint32_t phase)
 {
     uint32_t quadrant=phase>>30,position=phase&0x3fffffffu;
     if(quadrant&1u)position=0x40000000u-position;
@@ -145,7 +145,7 @@ static int32_t sine(uint32_t phase)
     if(index<64u)y+=(sine_quarter[index+1u]-y)*(int32_t)fraction/256;
     return quadrant>=2u ? -y : y;
 }
-static uint32_t pitch_increment(int32_t pitch_q16)
+MD_INLINE uint32_t pitch_increment(int32_t pitch_q16)
 {
     if(pitch_q16<=0)return note_inc[0];
     if(pitch_q16>=127*65536)return note_inc[127];
@@ -167,7 +167,7 @@ static int voice_slot(const md_electronic_fx_state_t *s)
     }
     return oldest;
 }
-static void place(md_electronic_fx_voice_t *v,int32_t pan)   /* a balance: the far side falls, the near one stays */
+MD_INLINE void place(md_electronic_fx_voice_t *v,int32_t pan)   /* a balance: the far side falls, the near one stays */
 {
     if(pan<0)pan=0;else if(pan>32768)pan=32768;
     v->gain_l=pan<=16384 ? 32768 : 2*(32768-pan);v->gain_r=pan>=16384 ? 32768 : 2*pan;
@@ -291,13 +291,13 @@ static int event(void *state,const md_event_t *e)
     if(s->kit)return trigger_kit(s,(uint8_t)(s->kit-1u),e->data.note.key,e->data.note.velocity); /* its off finds nothing */
     return trigger(s,&s->settings,s->settings.recipe,e->data.note.key,e->data.note.velocity,e->token);
 }
-static int32_t clamp_signal(int32_t value)
+MD_INLINE int32_t clamp_signal(int32_t value)
 {
     return value < -262144 ? -262144 : value > 262144 ? 262144 : value;
 }
 #define RELEASE_K ((Q30/(30u*MD_SAMPLE_RATE/1000u))*7u)   /* a released note: 30 ms */
 #define FLOOR (Q30>>12)   /* a voice is over 72 dB down (it was 120: a second more of every voice, costing and unheard) */
-static int32_t voice_sample(md_electronic_fx_voice_t *v)
+MD_INLINE int32_t voice_sample(md_electronic_fx_voice_t *v)
 {
     if(v->amp<FLOOR || v->age>=MD_SAMPLE_RATE*8u){v->active=0;return 0;}
     int32_t pitch=v->base_q16+(int32_t)(((int64_t)v->sweep_q16*v->pitch_env)>>30);
@@ -341,7 +341,7 @@ static int32_t voice_sample(md_electronic_fx_voice_t *v)
 /* The shaped recipes. The envelope first: the swell is a line up to full, the fall a line down, squared. Then the
  * source by recipe; w is how far the fall has come and a the envelope, both 0 .. 32768. */
 static const int8_t step_notes[7]={0,7,12,19,24,31,36};   /* fifths and octaves: in key above any note of the scale */
-static int32_t shaped_sample(md_electronic_fx_voice_t *v)
+MD_INLINE int32_t shaped_sample(md_electronic_fx_voice_t *v)
 {
     if(v->age>=MD_SAMPLE_RATE*8u){v->active=0;return 0;}
     if(v->releasing){
@@ -434,7 +434,7 @@ static int32_t shaped_sample(md_electronic_fx_voice_t *v)
  * four seconds), reaching its target exactly; the band-pass centre is set every 16
  * samples from the colour (G3 .. G6) and an 11 s LFO (an octave either side) */
 #define WIND_DAMP 12000
-static int32_t wind_sample(md_electronic_fx_state_t *s)
+MD_INLINE int32_t wind_sample(md_electronic_fx_state_t *s)
 {
     int32_t target=(int32_t)s->settings.wind*327*256;
     if(!target && s->wind_gain<256){s->wind_gain=0;return 0;}
@@ -455,7 +455,7 @@ static int32_t wind_sample(md_electronic_fx_state_t *s)
     if(out>32767)out=32767;else if(out < -32767)out=-32767;
     return (int32_t)(((int64_t)out*(s->wind_gain>>8))>>15);
 }
-static void render(void *state,int32_t *stereo,uint32_t frames)
+MD_HOT static void render(void *state,int32_t *stereo,uint32_t frames)
 {
     md_electronic_fx_state_t *s=state;
     for(uint32_t i=0;i<frames;i++){

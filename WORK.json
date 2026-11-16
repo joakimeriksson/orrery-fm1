@@ -14,7 +14,7 @@
       "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
       "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
       "validation": [
-        "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+        "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
         "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance.",
         "Independent review: all artifact and 19+121 source hashes match, package header/CRC valid; recalculated WAV RMS1945.8442399088358/peak12628/hatcorrelation0.7659203381477989 match focused results and40.6%/0overruns log. build/melodee-audit-results/baseline-review.json; 58s old-image provenance limitation is explicit."
       ],
@@ -47,7 +47,7 @@
             "summary": "Native module syntax passes; all nine imported engine files match upstream; fresh Docker build and 58-second reference demo running.",
             "next": "Wait for build, snapshot fresh firmware artifact hashes and run focused emulator timing/load check; distinguish pre-build demo from freshly rebuilt image.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
             ]
           },
           "from": {
@@ -63,7 +63,7 @@
             "summary": "Native module syntax passes; all nine imported engine files match upstream; fresh Docker build and 58-second reference demo running.",
             "next": "Wait for build, snapshot fresh firmware artifact hashes and run focused emulator timing/load check; distinguish pre-build demo from freshly rebuilt image.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
             ]
           }
         },
@@ -84,7 +84,7 @@
             "summary": "Native module syntax passes; all nine imported engine files match upstream; fresh Docker build and 58-second reference demo running.",
             "next": "Wait for build, snapshot fresh firmware artifact hashes and run focused emulator timing/load check; distinguish pre-build demo from freshly rebuilt image.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match."
             ]
           },
           "to": {
@@ -93,7 +93,7 @@
             "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
             "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
               "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance."
             ]
           }
@@ -109,7 +109,7 @@
             "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
             "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
               "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance."
             ]
           },
@@ -119,7 +119,7 @@
             "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
             "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
               "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance."
             ]
           }
@@ -135,7 +135,7 @@
             "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
             "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
               "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance."
             ]
           },
@@ -145,7 +145,7 @@
             "summary": "Fresh build and focused emulator baseline pass; reference artifacts and source hashes recorded in work/evidence/baseline.md.",
             "next": "Agent B reviews baseline, then accept M0-01; root reviews Melodee audit before claiming API contracts.",
             "validation": [
-              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
+              "cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c: passed; build/baseline/source-sha256.json captures 19 source hashes; import-comparison.json confirms all nine copies match.",
               "Fresh cross build exited 0: code 23876 B, data+BSS 44788 B, no RAM code. Fresh 7.5s emulator: worst 40.6%, 0 overruns, 250ms correlation 0.7659, RMS 1945.8, peak 12628. Separate pre-build-image 58s reference: worst 51.2%, 0 overruns. See work/evidence/baseline.md for commands/hashes/provenance.",
               "Independent review: all artifact and 19+121 source hashes match, package header/CRC valid; recalculated WAV RMS1945.8442399088358/peak12628/hatcorrelation0.7659203381477989 match focused results and40.6%/0overruns log. build/melodee-audit-results/baseline-review.json; 58s old-image provenance limitation is explicit."
             ]
@@ -1181,7 +1181,7 @@
       "next": "Reviewer: verify upstream diff vs scratchpad backup, rerun arp_check.py and native suites; accept or revise. Then M3-04 is unblocked.",
       "validation": [
         "fm1-harbor-proc tests/arp_check.py all 12 pass; engine_arithmetic_check PASS; 9 old/new renders byte-identical; 13 native suites PASS ASan/UBSan. work/evidence/arp-performance.md",
-        "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. seventies-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms."
+        "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. orrery-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms."
       ],
       "history": [
         {
@@ -1260,7 +1260,7 @@
           "at": "2026-11-06T19:45:14+00:00",
           "action": "accept",
           "actor": "reviewer-claude-4",
-          "detail": "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. seventies-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms.",
+          "detail": "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. orrery-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms.",
           "from": {
             "status": "review",
             "owner": "claude",
@@ -1277,7 +1277,7 @@
             "next": "Reviewer: verify upstream diff vs scratchpad backup, rerun arp_check.py and native suites; accept or revise. Then M3-04 is unblocked.",
             "validation": [
               "fm1-harbor-proc tests/arp_check.py all 12 pass; engine_arithmetic_check PASS; 9 old/new renders byte-identical; 13 native suites PASS ASan/UBSan. work/evidence/arp-performance.md",
-              "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. seventies-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms."
+              "Diffed upstream arp_engine.c/.h, arp_host.c, arp_check.py against scratchpad backups: existing callers pass slide=0, sliding=0 selects glide_k so old paths unchanged. engines/arp_engine.* sha256 equal upstream (6a4c2f4c.., cceb0640..). fm1-harbor-proc: tests/arp_check.py all passed incl. play attacks/legato/slide/accent; tests/engine_arithmetic_check.py ARP+MiniPops PASS. orrery-fm1: tests/run_native.py --sanitize on --build-dir build/native-review-all4 PASS 13 suites. ASan probe (scratchpad review4/probe.c): slide/legato without gate retrigger with sliding=0; slide+accent keeps env stage; later legato clears sliding and accent; note>127 ignored; patch glide makes slide_k==glide_k; reset/panic memset clears sliding. Adapter: stale/foreign offs no-op, flagged off ARG error, plain second on CAPACITY without mutation, velocity not mapped to accent (byte-identical state at vel 1/127). Nits (non-blocking): accent toggles abruptly on a legato note (same as existing 1601 TIE behaviour); arp_check.py comment says 'part-way at 15 ms' while probe is at 5 ms."
             ]
           }
         }
@@ -2898,9 +2898,9 @@
       "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
       "next": "reviewer-claude-5 re-reviews.",
       "validation": [
-        "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-        "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md",
-        "Resubmission verified: schedule_links (seventies.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; seventies_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/seventies.c)."
+        "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+        "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md",
+        "Resubmission verified: schedule_links (orrery.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; orrery_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/orrery.c)."
       ],
       "history": [
         {
@@ -2928,10 +2928,10 @@
           "action": "note",
           "actor": "claude",
           "detail": {
-            "summary": "SEVENTIES runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
-            "next": "Reviewer: read module/seventies.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and seventies_emu.py; accept or revise.",
+            "summary": "ORRERY runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
+            "next": "Reviewer: read module/orrery.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and orrery_emu.py; accept or revise.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           },
           "from": {
@@ -2944,10 +2944,10 @@
           "to": {
             "status": "active",
             "owner": "claude",
-            "summary": "SEVENTIES runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
-            "next": "Reviewer: read module/seventies.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and seventies_emu.py; accept or revise.",
+            "summary": "ORRERY runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
+            "next": "Reviewer: read module/orrery.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and orrery_emu.py; accept or revise.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           }
         },
@@ -2959,19 +2959,19 @@
           "from": {
             "status": "active",
             "owner": "claude",
-            "summary": "SEVENTIES runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
-            "next": "Reviewer: read module/seventies.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and seventies_emu.py; accept or revise.",
+            "summary": "ORRERY runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
+            "next": "Reviewer: read module/orrery.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and orrery_emu.py; accept or revise.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           },
           "to": {
             "status": "review",
             "owner": "claude",
-            "summary": "SEVENTIES runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
-            "next": "Reviewer: read module/seventies.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and seventies_emu.py; accept or revise.",
+            "summary": "ORRERY runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
+            "next": "Reviewer: read module/orrery.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and orrery_emu.py; accept or revise.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           }
         },
@@ -2979,23 +2979,23 @@
           "at": "2026-11-06T20:31:41+00:00",
           "action": "revise",
           "actor": "reviewer-claude-5",
-          "detail": "Native 14/14 (ASan/UBSan) and seventies_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) seventies.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
+          "detail": "Native 14/14 (ASan/UBSan) and orrery_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) orrery.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
           "from": {
             "status": "review",
             "owner": "claude",
-            "summary": "SEVENTIES runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
-            "next": "Reviewer: read module/seventies.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and seventies_emu.py; accept or revise.",
+            "summary": "ORRERY runs on the session: adapters, band patterns from ARP sequences/Mini Pops rhythms/chords (engines' sequencers off), local echo+reverb, host room off, live input via router. Regular and seqdock images build and pass.",
+            "next": "Reviewer: read module/orrery.c, module/band.*, the supporting changes to session/mixer/reverb/minipops; rerun band suite and orrery_emu.py; accept or revise.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           },
           "to": {
             "status": "active",
             "owner": "claude",
-            "summary": "Review changes requested: Native 14/14 (ASan/UBSan) and seventies_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) seventies.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
-            "next": "Address review: Native 14/14 (ASan/UBSan) and seventies_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) seventies.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
+            "summary": "Review changes requested: Native 14/14 (ASan/UBSan) and orrery_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) orrery.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
+            "next": "Address review: Native 14/14 (ASan/UBSan) and orrery_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) orrery.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           }
         },
@@ -3007,16 +3007,16 @@
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
             ]
           },
           "from": {
             "status": "active",
             "owner": "claude",
-            "summary": "Review changes requested: Native 14/14 (ASan/UBSan) and seventies_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) seventies.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
-            "next": "Address review: Native 14/14 (ASan/UBSan) and seventies_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) seventies.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
+            "summary": "Review changes requested: Native 14/14 (ASan/UBSan) and orrery_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) orrery.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
+            "next": "Address review: Native 14/14 (ASan/UBSan) and orrery_emu.py 14/14 on both images pass; session cursors, mixer fast paths (gain_apply(x,0)==0, smooth snaps) and reverb exact-zero tail check out. Revise for: (1) module/band.c:105 drops the guiro scrape length: mp_engine.c:183 gives every guiro hit a gate100 (150/60/200 hundredths of a machine step, tempo-scaled at :242), but the band places a gate-less hit and instruments/minipops.c (mp_trigger, mp_engine.c:229) plays a fixed MP_SR/4. Scenario: Rock 1, GUIRO on, 120 BPM: legacy long-short-short scrapes 375/150/150 ms become 250/250/250 ms, and stop scaling with tempo. band_test matches voices and frames only, the evidence says every hit matched, and the DRUMS page/report says nothing. Carry the length (for example the drum step gate to a hit duration, or distinct long/short guiro handling) and test it against the engine, or report it visibly and in the evidence as a v1 limit. (2) orrery.c:248-249 schedule_links: if the bass launch is accepted and the strings launch is refused (ring at reserve), md_band_next_link then sees the bass queued with requested==next and returns -1, so chords stay on the old link for the whole next link. Queue the strings launch independently (check snap.queued/requested for T_STRINGS) or retry it. Minor, no change required: REC no longer releases held lead notes as legacy did (tokens still release on key-up); MiniPops settings v2 refuses v1 records with MD_ERR_VERSION, fine while no v1 project is persisted.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md"
             ]
           },
           "to": {
@@ -3025,8 +3025,8 @@
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
             ]
           }
         },
@@ -3041,8 +3041,8 @@
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
             ]
           },
           "to": {
@@ -3051,8 +3051,8 @@
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
             ]
           }
         },
@@ -3060,15 +3060,15 @@
           "at": "2026-11-06T20:40:08+00:00",
           "action": "accept",
           "actor": "reviewer-claude-5",
-          "detail": "Resubmission verified: schedule_links (seventies.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; seventies_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/seventies.c).",
+          "detail": "Resubmission verified: schedule_links (orrery.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; orrery_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/orrery.c).",
           "from": {
             "status": "review",
             "owner": "claude",
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md"
             ]
           },
           "to": {
@@ -3077,16 +3077,16 @@
             "summary": "Revised per review: per-track link scheduling; pending launches never replaced (fixes a skipped link when a bar line falls on a block edge); guiro scrape length stated as v1 limit on page and evidence.",
             "next": "reviewer-claude-5 re-reviews.",
             "validation": [
-              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; seventies_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
-              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, seventies_emu.py all passed, worst 66.2%. work/evidence/module-session.md",
-              "Resubmission verified: schedule_links (seventies.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; seventies_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/seventies.c)."
+              "band_test: bass vs ARP 1601 edge-for-edge within 2 samples (8 seqs), chords on link bars, drums vs Mini Pops all 20 rhythms (4 quantised, reported); 14 native suites PASS ASan/UBSan; orrery_emu.py both images: 0 overruns, worst 66.2%, room off, 250 ms periodicity; emu_test seventies 56.6%. work/evidence/module-session.md",
+              "14 native suites PASS ASan/UBSan; band_test checks chord identity per link bar and a refused chord launch, old scheduling fails it; both images rebuilt, orrery_emu.py all passed, worst 66.2%. work/evidence/module-session.md",
+              "Resubmission verified: schedule_links (orrery.c:230-241) decides BASS and CHORDS from each track's own snapshot queued state; md_band_next_link (band.c:153) never replaces a pending launch (a queued launch always lands on the next bar line, so it cannot go stale for more than one bar); band_test checks chord root on every attacked bar, requires an attack on every link-change bar, and replays a refused chord launch. Guiro scrape length is a stated v1 limit: DRUMS page shows GUIRO 1/4 S, evidence Limits says so. run_native.py --sanitize on: 14/14 pass; orrery_emu.py: all checks pass on fm1-dock and seqdock images (rebuilt 21:37-21:38, newer than band.c/orrery.c)."
             ]
           }
         }
       ],
       "planned_lane": "A",
       "files": [
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg",
         "tests/integration/"
       ],
@@ -3108,9 +3108,9 @@
       "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
       "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
       "validation": [
-        "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-        "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md",
-        "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (seventies.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy."
+        "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+        "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md",
+        "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (orrery.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy."
       ],
       "history": [
         {
@@ -3141,7 +3141,7 @@
             "summary": "Measured the slice in fm1-emu: supported case (4 string voices, 1 rhythm, held lead, 138 BPM bass with 48 locks, echo+reverb) 63.2%, ten minutes 68.2% 0 overruns no stuck notes; FX replacement 58.7%; master sweep 66.5%. Dense strings/drums and inserts exceed budget and are documented as unsupported. -O2 adopted.",
             "next": "Reviewer: read tests/stress/*, the audio-budget evidence and the -O2/mixer/phaser/session changes; rerun a stress variant if wanted; accept or revise.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           },
           "from": {
@@ -3157,7 +3157,7 @@
             "summary": "Measured the slice in fm1-emu: supported case (4 string voices, 1 rhythm, held lead, 138 BPM bass with 48 locks, echo+reverb) 63.2%, ten minutes 68.2% 0 overruns no stuck notes; FX replacement 58.7%; master sweep 66.5%. Dense strings/drums and inserts exceed budget and are documented as unsupported. -O2 adopted.",
             "next": "Reviewer: read tests/stress/*, the audio-budget evidence and the -O2/mixer/phaser/session changes; rerun a stress variant if wanted; accept or revise.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           }
         },
@@ -3172,7 +3172,7 @@
             "summary": "Measured the slice in fm1-emu: supported case (4 string voices, 1 rhythm, held lead, 138 BPM bass with 48 locks, echo+reverb) 63.2%, ten minutes 68.2% 0 overruns no stuck notes; FX replacement 58.7%; master sweep 66.5%. Dense strings/drums and inserts exceed budget and are documented as unsupported. -O2 adopted.",
             "next": "Reviewer: read tests/stress/*, the audio-budget evidence and the -O2/mixer/phaser/session changes; rerun a stress variant if wanted; accept or revise.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           },
           "to": {
@@ -3181,7 +3181,7 @@
             "summary": "Measured the slice in fm1-emu: supported case (4 string voices, 1 rhythm, held lead, 138 BPM bass with 48 locks, echo+reverb) 63.2%, ten minutes 68.2% 0 overruns no stuck notes; FX replacement 58.7%; master sweep 66.5%. Dense strings/drums and inserts exceed budget and are documented as unsupported. -O2 adopted.",
             "next": "Reviewer: read tests/stress/*, the audio-budget evidence and the -O2/mixer/phaser/session changes; rerun a stress variant if wanted; accept or revise.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           }
         },
@@ -3189,23 +3189,23 @@
           "at": "2026-11-06T21:47:27+00:00",
           "action": "revise",
           "actor": "reviewer-claude-6",
-          "detail": "Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/seventies.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
+          "detail": "Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/orrery.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
           "from": {
             "status": "review",
             "owner": "claude",
             "summary": "Measured the slice in fm1-emu: supported case (4 string voices, 1 rhythm, held lead, 138 BPM bass with 48 locks, echo+reverb) 63.2%, ten minutes 68.2% 0 overruns no stuck notes; FX replacement 58.7%; master sweep 66.5%. Dense strings/drums and inserts exceed budget and are documented as unsupported. -O2 adopted.",
             "next": "Reviewer: read tests/stress/*, the audio-budget evidence and the -O2/mixer/phaser/session changes; rerun a stress variant if wanted; accept or revise.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           },
           "to": {
             "status": "active",
             "owner": "claude",
-            "summary": "Review changes requested: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/seventies.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
-            "next": "Address review: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/seventies.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
+            "summary": "Review changes requested: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/orrery.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
+            "next": "Address review: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/orrery.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           }
         },
@@ -3217,16 +3217,16 @@
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
             ]
           },
           "from": {
             "status": "active",
             "owner": "claude",
-            "summary": "Review changes requested: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/seventies.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
-            "next": "Address review: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/seventies.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
+            "summary": "Review changes requested: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/orrery.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
+            "next": "Address review: Measurements reproduce (stress6 63.2%, 0 overruns; stress4 log 68.2%, 0 overruns; my re-analysis of stress4 audio: AC 0.13/0.44 LSB after stop vs 3,200 RMS while playing, so the stuck-note check works; hashes match; native 14/14 sanitized pass). Blocking: the supported set says 'one rhythm key' and the evidence says 'the shipped module stays in the supported set', but module/orrery.c:486-489 lets the DRUMS page toggle any of ten rhythm keys plus all three extras while the band runs. The evidence itself puts four keys with extras at 27% against 12% for one key, so 6 plus dense drums projects to about 78%, over the 70% target, and nothing measures or prevents it. M4-02's acceptance does not mention admission checks; the requirement lives only in prose. Fix: add a variant (6 with the reachable maximum of rhythm keys and extras, i.e. what the DRUMS page allows) and report it. If it is over 70%, either cap keys/extras in the module now or write the limit into M4-02's acceptance in EXECUTION.md/WORK.json. Then correct the 'stays in the supported set' sentence. Minor (no block): run_stress.py defaults to variants 1 2 3 4 and so always prints FAILED for the documented unsupported cases; make the default the supported set, or mark 1/2/3/9 as expected over. core/mixer.c track_process: the clamp after the gain is not the same as before for inputs beyond 2^24 at gain below unity. Probe: input 2^25 at level 16 gives 16384 out and clamped=0, where clamping first gave 8192 and clamped=512. The evidence's 'within the limit' wording covers this, and it is safe (no overflow, l still clamped), but the code comment should say the over-limit behaviour changed.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md"
             ]
           },
           "to": {
@@ -3235,8 +3235,8 @@
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
             ]
           }
         },
@@ -3251,8 +3251,8 @@
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
             ]
           },
           "to": {
@@ -3261,8 +3261,8 @@
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
             ]
           }
         },
@@ -3270,15 +3270,15 @@
           "at": "2026-11-06T22:22:41+00:00",
           "action": "accept",
           "actor": "reviewer-claude-6",
-          "detail": "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (seventies.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy.",
+          "detail": "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (orrery.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy.",
           "from": {
             "status": "review",
             "owner": "claude",
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md"
             ]
           },
           "to": {
@@ -3287,9 +3287,9 @@
             "summary": "Revised per review: measured what the shipped panel can reach (variants 11-17); DRUMS page now one rhythm key at a time; reachable dense single rhythm with extras is 75.6% over ten minutes (0 overruns) and is reported as unresolved with remedies (engines, second core); M4-02 acceptance now requires budget admission; runner defaults to supported set.",
             "next": "reviewer-claude-6 re-reviews. Owner decision needed on the residual over-budget reachable case.",
             "validation": [
-              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; seventies_emu.py both images 63.6%. work/evidence/audio-budget.md",
-              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), seventies_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md",
-              "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (seventies.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy."
+              "python3 tests/stress/run_stress.py 4 6 8 10: within budget; 1 2 3 9 over (documented). Profile variant 7 attributes cost. 14 native suites PASS; orrery_emu.py both images 63.6%. work/evidence/audio-budget.md",
+              "Supported case variant 4: 68.2% over ten minutes, 0 overruns, no stuck notes; variants 6/8/10 within budget; reachable variant 15: 75.6% over ten minutes; production images rebuilt (CRC 3f6616ca), orrery_emu.py all passed 63.6%; 14 native suites PASS. work/evidence/audio-budget.md",
+              "Native suites with sanitizers: 14/14 pass (build/native-review-all6b). Earlier in this review I reproduced stress6 at 63.2% with 0 overruns, and stress4's audio after the stop measured AC 0.13/0.44 LSB, so the stuck-note check works. The supported case (variant 6, and 4 over ten minutes at 68.2%) meets <=70% with no underruns, stuck notes or wrap. The evidence now states honestly the reachable case it does not resolve (Beguine with the extras, 75.6% over ten minutes, 0 overruns). The DRUMS page now allows one rhythm key at a time (orrery.c:490, 701-702, label :386). M4-02's acceptance now requires budget admission, which fits 'scope revised and retested before release'. The mixer comment now documents the change for over-limit inputs. Residual: run_stress.py:57 lists variant 14 among 'the short supported cases' although its ten-minute twin (15) is over budget. The release gate (M7) must confirm that M4-02 admission removes the extras or dense-rhythm reach, or that the owner chose a capacity remedy."
             ]
           }
         }
@@ -3355,7 +3355,7 @@
       "files": [
         "module/ui.*",
         "tests/integration/panel*",
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg"
       ],
       "scope": "Descriptor-backed pages, named alternate rows, LEDs/header, track FX bindings, two sends, master sweep performance controls, modifiers and cursor preservation.",
@@ -3433,7 +3433,7 @@
         "module/ui.*",
         "tests/integration/workflows*",
         "work/evidence/workflows.md",
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg"
       ],
       "scope": "Song/record pages plus complete bass/chord/drum/lead composition, FX performance, copy/undo and arrangement scenarios.",
@@ -3461,7 +3461,7 @@
       "files": [
         "instruments/arp.c",
         "module/sounds.c",
-        "module/seventies.c"
+        "module/orrery.c"
       ],
       "scope": "Twenty sounds a part for lead and bass with descriptive names; descriptor-backed sound editor with named rows, live editing and one-level undo; edited sounds saved with the project; shared user library after the storage decision.",
       "acceptance": "Every sound loads, plays and fits the audio budget; no player-visible artist or record names; every editable parameter has a panel path; live edits never click or strand notes; undo is exact; project round trip preserves an edited sound byte for byte."
@@ -3515,7 +3515,7 @@
       "files": [
         "module/storage.*",
         "tests/integration/storage*",
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg"
       ],
       "scope": "SAVE pending while running, coherent snapshot, stopped erase, failure/dirty UI, factory fallback, old settings migration and optional indexed-bank capability checks.",
@@ -3542,7 +3542,7 @@
         "module/transfer.*",
         "tools/project.py",
         "tests/native/transfer*",
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg"
       ],
       "scope": "HB_F_DATA bounded import staging and project export protocol/tool; validate lengths, ordering, retries, checksum and destination compatibility.",
@@ -3616,7 +3616,7 @@
       "files": [
         "module/midi.*",
         "tests/integration/midi*",
-        "module/seventies.c",
+        "module/orrery.c",
         "module/module.cfg"
       ],
       "scope": "Channel routing through events, program/CC/bend/pressure/sustain, clock follower with bounded phase correction, source selection, timeout and no feedback loops.",

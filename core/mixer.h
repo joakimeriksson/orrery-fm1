@@ -38,6 +38,7 @@
 #define MD_MIX_SMOOTH_SHIFT 8u /* one-pole time constant 256 samples, about 5.8 ms */
 
 enum { MD_MIX_BUS_ECHO, MD_MIX_BUS_REVERB, MD_MIX_BUSES };
+#define MD_MIX_LANES 2u /* sums of their own, so two cores can add tracks at once (md_mixer_add_track_lane) */
 
 typedef struct {
     md_effect_t *effect;
@@ -75,6 +76,12 @@ typedef struct {
     int32_t wet[2u * MD_MAX_RENDER_FRAMES];
     int32_t xfade[2u * MD_MAX_RENDER_FRAMES];
     int32_t silent[2u * MD_MAX_RENDER_FRAMES];
+    /* the second lane: its own sums, crossfade scratch and clamp count, joined to the first in finish */
+    int32_t dry1[2u * MD_MAX_RENDER_FRAMES];
+    int32_t send1[MD_MIX_BUSES][2u * MD_MAX_RENDER_FRAMES];
+    int32_t xfade1[2u * MD_MAX_RENDER_FRAMES];
+    uint32_t clamped1;
+    uint8_t lane1;                    /* something was added on it in this span */
 } md_mixer_t;
 
 /* Track parameters use the MD_TARGET_MIXER local IDs from param.h. */
@@ -113,6 +120,10 @@ int md_mixer_reset(md_mixer_t *);
  * was not added is processed as silence so its inserts and gains stay in time. */
 int md_mixer_begin(md_mixer_t *, uint32_t frames);
 int md_mixer_add_track(md_mixer_t *, uint32_t track, int32_t *stereo);
+/* The same on a lane (0 .. MD_MIX_LANES - 1; md_mixer_add_track is lane 0). Two callers may add different tracks
+ * at the same time when each keeps to its own lane: a track's state, inserts and meter are its own, and the sums,
+ * the scratch and the clamp count are the lane's. The result is the same on any lane. */
+int md_mixer_add_track_lane(md_mixer_t *, uint32_t track, int32_t *stereo, uint32_t lane);
 int md_mixer_finish(md_mixer_t *, int32_t *out);
 
 void md_mixer_meters(const md_mixer_t *, md_mixer_meters_t *out);

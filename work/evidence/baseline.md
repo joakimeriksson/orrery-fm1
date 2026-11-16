@@ -25,16 +25,16 @@ Native module syntax passes with the descriptor section annotation replaced for 
 
 ```sh
 cc -fsyntax-only -Wall '-DHB_DESC=const hb_module_t hb_module' \
-  -I ../fm1-harbor-proc/firmware/dock -I engines module/seventies.c
+  -I ../fm1-harbor-proc/firmware/dock -I engines module/orrery.c
 ```
 
 Fresh build, from fm1-harbor-proc (Docker access and external build writes received sandbox approval):
 
 ```sh
 PYTHON=/Users/joakimeriksson/work/fm1-harbor/.venv/bin/python3 \
-HB_MOUNT=/Users/joakimeriksson/work/seventies-fm1 \
+HB_MOUNT=/Users/joakimeriksson/work/orrery-fm1 \
 ./build.sh --no-package --seqdock --only \
-  --modules cs1,scintilla,/Users/joakimeriksson/work/seventies-fm1/module
+  --modules cs1,scintilla,/Users/joakimeriksson/work/orrery-fm1/module
 ```
 
 Build exited 0. Module: code **23876 B**, initialized data **20 B**, BSS **44768 B**, RAM code **0 B**,
@@ -112,7 +112,7 @@ decision. Keep the old implementation as reference until session integration.
 - `engines/mp_engine.h`: `668e64b71f37e451ec0fb430a5e306b84cc00a18e6988717a3c9a5144ddd2bcd`
 - `engines/mp_tables.h`: `9e024e4f4e2b88b55ee4a95e1613f9cd2c68e4673f681e169cf7abc52a4e6453`
 - `module/module.cfg`: `01837c6fb649e8006b3710ebb7303bc2462e15fd68026a3ce24a8385fa1fc6ee`
-- `module/seventies.c`: `977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be`
+- `module/orrery.c`: `977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be`
 - `take.py`: `4fb5f77552fd9d41ba4777f19def644bd99b3ce22d1c9588a0e476b005aa6dc0`
 
 ## Retained artifact hashes

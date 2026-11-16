@@ -92,7 +92,7 @@ static int event(void *state,const md_event_t *e)
     s->voices[s->voice_count++]=(md_adapter_voice_t){e->token,e->data.note.key};
     em_note_on(&s->engine,e->data.note.key,e->data.note.velocity);return MD_OK;
 }
-static void render(void *state,int32_t *out,uint32_t frames){em_render(&((md_eminent_state_t *)state)->engine,out,frames);}
+MD_HOT static void render(void *state,int32_t *out,uint32_t frames){em_render(&((md_eminent_state_t *)state)->engine,out,frames);}
 const md_instrument_desc_t MD_EMINENT={
     .processor={.id=MD_INSTRUMENT_EMINENT,.api_version=MD_API_VERSION,.settings_version=MD_EMINENT_SETTINGS_VERSION,
         .name="EMINENT",.state_bytes=sizeof(md_eminent_state_t),.state_alignment=_Alignof(md_eminent_state_t),

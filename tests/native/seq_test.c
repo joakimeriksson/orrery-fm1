@@ -111,6 +111,16 @@ static int chords_drums_ties_and_slide(void)
         if(e->kind==MD_EVENT_SOURCE_RELEASE && e->track==0 && log.row[i].sample==11025)release=1;
     }
     CHECK(release);
+    /* a voicing: the chord's second and fourth tones an octave up, the root where it is; other bits are refused */
+    defaults(&f);p=&f.bank.pattern[0][0];p->meta.mode=MD_PATTERN_CHORD;
+    p->step[0]=(md_step_t){.payload=60u|(MD_CHORD_MINOR7<<8)|MD_CHORD_RAISE(1)|MD_CHORD_RAISE(3),.velocity=90,.gate=1,.probability=100};
+    CHECK(md_seq_bank_validate(&f.bank)==MD_OK);
+    CHECK(!start(&f));memset(&log,0,sizeof log);CHECK(run(&f,2000,17,&log,0)==MD_OK);
+    {const uint8_t open[]={60,75,67,82};uint32_t n=0;
+    for(uint32_t i=0;i<log.count;i++){const md_event_t *e=&log.row[i].event.timed.event;
+        if(e->kind==MD_EVENT_NOTE_ON){CHECK(n<4 && e->data.note.key==open[n]);n++;}}
+    CHECK(n==4);}
+    p->step[0].payload|=0x4000u;CHECK(md_seq_bank_validate(&f.bank)==MD_ERR_RANGE);
     defaults(&f);p=&f.bank.pattern[0][0];p->step[0].payload=48;p->step[0].gate=1;
     p->step[1].payload=55;p->step[1].gate=50;p->step[1].flags=MD_STEP_SLIDE;
     CHECK(!start(&f));memset(&log,0,sizeof log);CHECK(run(&f,6000,255,&log,0)==MD_OK);

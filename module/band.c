@@ -45,6 +45,18 @@ static void bass(md_seq_pattern_t *p, const arp_seq_t *s, int8_t transpose, md_b
         }
     }
 }
+/* A chord's voicing: the root where it is, the tones over it in one octave (from `floor`, the lowest root of the
+ * range, an octave up), whatever the root: a tone two chords share stays where it is and the others move a step,
+ * as a player's hands do, instead of every chord the same shape moved bodily (seq.h: MD_CHORD_RAISE). */
+static uint16_t voiced(uint32_t root, uint32_t floor, uint8_t quality)
+{
+    static const uint8_t IV[MD_CHORD_COUNT][4] = {{0, 4, 7, 12}, {0, 3, 7, 12}, {0, 4, 7, 11}, {0, 3, 7, 10}, {0, 2, 7, 12},
+                                                  {0, 5, 7, 12}, {0, 7, 12, 19}};   /* (seq.c's) */
+    uint16_t v = (uint16_t)(root | (uint16_t)(quality << 8));
+    if (quality == MD_CHORD_FIFTH) return v;         /* (open as it is: raised, its fifth would land on its twelfth) */
+    for (uint32_t i = 1; i < 4u; i++) if (root + IV[quality][i] < floor + 12u) v |= MD_CHORD_RAISE(i);
+    return v;
+}
 static void chord(md_seq_pattern_t *p, const md_band_chord_t *c, uint8_t octave, uint8_t bars)
 {
     empty(p, MD_PATTERN_CHORD, bars, MD_DIV_BAR);
@@ -52,7 +64,7 @@ static void chord(md_seq_pattern_t *p, const md_band_chord_t *c, uint8_t octave,
     uint16_t root = (uint16_t)(36u + 12u * (octave > 4u ? 4u : octave) + c->root % 12u);
     for (uint32_t k = 0; k < bars; k++) {
         md_step_t *t = &p->step[k];
-        t->payload = (uint16_t)(root | (uint16_t)(CHORD_QUALITY[c->kind] << 8));
+        t->payload = voiced(root, root - c->root % 12u, CHORD_QUALITY[c->kind]);
         t->velocity = 100;
         t->gate = 100;
         if (k) t->flags = MD_STEP_TIE;  /* held across the link's bars: one attack */
@@ -130,16 +142,36 @@ static uint32_t amb_tones(uint8_t kind, uint8_t *iv)   /* the chord's tones with
     for (uint32_t i = 0; i < N[kind]; i++) iv[i] = T[kind][i];
     return N[kind];
 }
-/* AMBIENT's lead phrase (an original, for the laser harp): over each two-bar chord a few long notes on its tones two
- * octaves over the bass, four motifs in turn (they rise, answer, climb, settle), eighths at the tempo, each note held
- * (tied) so the echo and the hall carry it. A ladder index j is tone j % n of the chord, j / n octaves up. */
+/* AMBIENT's lead phrases (originals): over each two-bar chord a few notes on its tones, four motifs in turn, eighths
+ * at the tempo, each note held (tied) so the echo and the hall carry it. A ladder index j is tone j % n of the chord,
+ * j / n octaves up. The styles (s->phrase):
+ *   1 HARP        long notes two octaves over the bass that rise, answer, climb, settle (made for the laser harp)
+ *   2 LONG TONES  one or two notes a chord an octave lower, joined: for a sound that swells (brass, a choir, a violin)
+ *   3 BELLS       a few short notes high up, off the beat, and room between: for a sound that rings (vibes, chimes)
+ *   4 CALLS       three rising notes, six bars of quiet, three in answer, quiet again: a signal far off */
 static void lead_phrase(const md_band_settings_t *s, md_seq_bank_t *b)
 {
-    static const uint8_t MOTIF[4][5][3] = {      /* {step, length, ladder index (99: a ladder top)}, length 0 ends */
-        {{0, 3, 99}, {3, 3, 2}, {6, 2, 1}, {8, 8, 0}, {0, 0, 0}},
-        {{0, 2, 1}, {2, 2, 2}, {4, 4, 99}, {8, 4, 100}, {12, 4, 2}},
-        {{0, 6, 100}, {6, 2, 99}, {8, 3, 2}, {11, 5, 99}, {0, 0, 0}},
-        {{0, 4, 2}, {4, 4, 1}, {8, 8, 0}, {0, 0, 0}, {0, 0, 0}}};
+    static const uint8_t MOTIF[MD_BAND_PHRASES][4][5][3] = {   /* {step, length, ladder index (99: a ladder top)}, length 0 ends */
+        {{{0, 3, 99}, {3, 3, 2}, {6, 2, 1}, {8, 8, 0}, {0, 0, 0}},
+         {{0, 2, 1}, {2, 2, 2}, {4, 4, 99}, {8, 4, 100}, {12, 4, 2}},
+         {{0, 6, 100}, {6, 2, 99}, {8, 3, 2}, {11, 5, 99}, {0, 0, 0}},
+         {{0, 4, 2}, {4, 4, 1}, {8, 8, 0}, {0, 0, 0}, {0, 0, 0}}},
+        {{{0, 10, 2}, {10, 6, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 13, 99}, {13, 3, 2}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 6, 1}, {6, 10, 2}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 14, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
+        {{{2, 2, 99}, {7, 2, 2}, {12, 3, 100}, {0, 0, 0}, {0, 0, 0}},
+         {{4, 2, 2}, {10, 3, 1}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 2, 100}, {3, 2, 99}, {6, 2, 2}, {11, 4, 1}, {0, 0, 0}},
+         {{6, 2, 2}, {12, 4, 99}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}},
+        {{{0, 2, 0}, {2, 2, 1}, {4, 9, 2}, {0, 0, 0}, {0, 0, 0}},     /* (the ladder's first three: a bare fifth's are root, fifth, octave) */
+         {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 2, 3}, {2, 2, 2}, {4, 9, 0}, {0, 0, 0}, {0, 0, 0}},
+         {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}}};
+    static const uint8_t UP[MD_BAND_PHRASES] = {24, 12, 12, 24};   /* over the chord's root (F2 .. E3 at the strings' octave 1; the
+                                                                    * sounds that ring speak an octave or three over their key) */
+    static const uint8_t VEL[MD_BAND_PHRASES][2] = {{110, 96}, {100, 92}, {104, 84}, {100, 90}};   /* a motif's first note, the rest */
+    uint32_t style = (uint32_t)(s->phrase - 1u) % MD_BAND_PHRASES;
     for (uint32_t p = 0; p < MD_PATTERNS_PER_TRACK; p++) {
         uint32_t half = p & 1u;
         md_seq_pattern_t *ld = &b->pattern[MD_BAND_LEAD][p];
@@ -148,15 +180,16 @@ static void lead_phrase(const md_band_settings_t *s, md_seq_bank_t *b)
             uint32_t i = half * 4u + chord;
             uint8_t iv[4], kind = s->chord[i].kind;
             if (kind == MD_BAND_CHORD_NONE || kind >= MD_BAND_CHORD_KINDS) continue;
-            uint32_t n = amb_tones(CHORD_QUALITY[kind], iv), base = amb_root(s, i) + 24u;
+            uint32_t n = amb_tones(CHORD_QUALITY[kind], iv), base = amb_root(s, i) + UP[style];
             if (base > 79u) base -= 12u;
+            if (s->phrase_shift >= -24 && s->phrase_shift <= 24) base = (uint32_t)((int32_t)base + s->phrase_shift);
             for (uint32_t m = 0; m < 5u; m++) {
-                const uint8_t *t = MOTIF[i % 4u][m];
+                const uint8_t *t = MOTIF[style][i % 4u][m];
                 if (!t[1]) break;
                 uint32_t j = t[2] >= 99u ? n + t[2] - 99u : t[2];
                 uint32_t key = base + 12u * (j / n) + iv[j % n];
                 for (uint32_t k = 0; k < t[1]; k++)
-                    ld->step[chord * 16u + t[0] + k] = (md_step_t){.payload = (uint16_t)key, .velocity = (uint8_t)(m ? 96 : 110),
+                    ld->step[chord * 16u + t[0] + k] = (md_step_t){.payload = (uint16_t)key, .velocity = VEL[style][m != 0],
                         .gate = 100, .flags = (uint8_t)(k ? MD_STEP_TIE : 0u), .probability = 100};
             }
         }
@@ -222,7 +255,7 @@ static void ambient(const md_band_settings_t *s, md_seq_bank_t *b, md_band_chain
             uint32_t i = half * 4u + k / 2u, root = amb_root(s, i);
             uint8_t kind = s->chord[i].kind, tie = (uint8_t)(k & 1u ? MD_STEP_TIE : 0u);
             if (kind == MD_BAND_CHORD_NONE || kind >= MD_BAND_CHORD_KINDS) continue;
-            ch->step[k] = (md_step_t){.payload = (uint16_t)(root | (CHORD_QUALITY[kind] << 8)), .velocity = 80,
+            ch->step[k] = (md_step_t){.payload = voiced(root, root - (s->chord[i].root % 12u + 7u) % 12u, CHORD_QUALITY[kind]), .velocity = 80,
                                       .gate = 100, .flags = tie, .probability = 100};
             bs->step[k] = (md_step_t){.payload = (uint16_t)(root - 12u), .velocity = 90, .gate = 100,
                                       .flags = tie, .probability = 100};

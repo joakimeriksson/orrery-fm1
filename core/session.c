@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "session.h"
 #include "processor_internal.h"
+#include "hot.h"
 #include <string.h>
 
 /* ---- parameter targets -------------------------------------------------------- */
@@ -183,6 +184,7 @@ int md_session_init(md_session_t *s, const md_session_config_t *c)
     s->par_mask = (uint8_t)(c->parallel_mask ? c->parallel_mask & MD_ALL_TRACK_MASK :
                             s->parallel_track < MD_TRACKS ? 1u << s->parallel_track : 0u);
     if (!c->parallel.run || !c->parallel.wait) s->par_mask = 0;
+    s->par_balance = c->parallel_balance && c->parallel.ticks && s->par_mask;
     s->stats.bpm_q8 = c->bpm_q8;
     s->snapshot = s->stats;
     return MD_OK;
@@ -507,7 +509,7 @@ static void publish(md_session_t *s)
     st->seq_base_errors = s->seq.base_errors;
     st->owned_notes = md_router_owned_count(&s->router);
     if (st->owned_notes > st->max_owned_notes) st->max_owned_notes = st->owned_notes;
-    st->rejected_notes = s->router.rejected_notes;
+    st->rejected_notes = s->router.rejected_notes + s->played_rejected;
     st->backend_errors = s->router.backend_errors;
     md_mixer_meters(&s->mixer, &st->meters);
     uint32_t sequence = s->snapshot_sequence + 1u;
@@ -535,37 +537,108 @@ static void prof_mark(uint32_t stage)
 #else
 #define PROF(stage) ((void)0)
 #endif
-/* the second core's job: the parallel track's segments and queued events, in order (one session at a time) */
+/* ---- routed first, played afterwards (session.h "Parallel") -------------------------------------------- */
+
+typedef struct { uint32_t errors, rejected; int32_t last; uint8_t fault; } played_t;
+/* one recorded operation: its track rendered up to it, then the instrument's event or reset */
+static void op_play(md_session_t *s, uint32_t i, uint32_t *cursor, played_t *p)
+{
+    uint32_t t = s->par_queue[i].track;
+    md_instrument_t *inst = s->instrument[t];
+    if (!inst) return;
+    render_track(s, t, cursor, s->par_queue[i].offset);
+    if (s->par_queue[i].reset) { md_instrument_reset(inst); return; }
+    int status = md_instrument_event(inst, &s->par_queue[i].event);
+    if (status == MD_OK) return;
+    p->errors++;
+    p->last = status;
+    if (s->par_queue[i].event.kind == MD_EVENT_HIT && status == MD_ERR_CAPACITY) p->rejected++;   /* dropped, as ever */
+    else p->fault |= (uint8_t)(1u << t);          /* the router took it as done: the track is panicked next block */
+}
+/* a core's share of a block: the recorded operations of its tracks (mine) in order, each track rendered to the
+ * block's end and added to the mixer on the core's lane; with a counter, what each track took */
+static void play(md_session_t *s, uint32_t mine, uint32_t lane, uint32_t *cursor, played_t *p)
+{
+    uint32_t (*ticks)(void) = s->par_balance ? s->parallel.ticks : NULL;
+    uint32_t cost[MD_TRACKS] = {0}, t0 = 0;
+    for (uint32_t i = 0; i < s->par_count; i++) {
+        uint32_t t = s->par_queue[i].track;
+        if (!(mine >> t & 1u)) continue;
+        if (ticks) t0 = ticks();
+        op_play(s, i, cursor, p);
+        if (ticks) cost[t] += ticks() - t0;
+    }
+    for (uint32_t t = 0; t < MD_TRACKS; t++) {
+        if (!(mine >> t & 1u)) continue;
+        if (ticks) t0 = ticks();
+        render_track(s, t, cursor, s->par_frames);
+        if (s->instrument[t]) (void)md_mixer_add_track_lane(&s->mixer, t, s->track_buffer[t], lane);
+        if (ticks) {                              /* up at once, down a quarter of the way a block */
+            uint32_t now = cost[t] + (ticks() - t0), was = s->track_cost[t];
+            s->track_cost[t] = now >= was ? now : was - ((was - now + 3u) >> 2);
+        }
+    }
+}
+/* the tracks for the second core this block: the dearest first, each to the core with less so far */
+static uint32_t balance(const md_session_t *s, uint32_t start)
+{
+    uint32_t order[MD_TRACKS], load[2] = {0, 0}, mask = 0, any = 0;
+    for (uint32_t t = 0; t < MD_TRACKS; t++) {
+        uint32_t k = t;
+        for (; k && s->track_cost[order[k - 1u]] < s->track_cost[t]; k--) order[k] = order[k - 1u];
+        order[k] = t;
+        any |= s->track_cost[t];
+    }
+    if (!any) return start;                       /* nothing measured yet */
+    for (uint32_t k = 0; k < MD_TRACKS; k++) {
+        uint32_t t = order[k], core = load[1] < load[0];
+        if (!s->instrument[t]) continue;
+        load[core] += s->track_cost[t];
+        mask |= core << t;
+    }
+    return mask;
+}
+static void played(md_session_t *s, const played_t *p)
+{
+    s->stats.event_errors += p->errors;
+    if (p->errors) note_error(s, p->last);
+    s->played_rejected += p->rejected;
+    s->fault_mask |= p->fault;
+}
+/* the router's sink while a block is routed: the operation recorded at the event's offset. A full record is
+ * played here first, every track up to its operations (the block is serial up to there). */
+static int op_sink(void *context, uint8_t track, const md_event_t *e)
+{
+    md_session_t *s = context;
+    if (s->par_count >= s->par_limit) {
+        played_t p = {0};
+        for (uint32_t i = 0; i < s->par_count; i++) op_play(s, i, s->cursor, &p);
+        played(s, &p);
+        s->par_count = 0;
+        s->par_flushed = 1;
+    }
+    s->par_queue[s->par_count].offset = s->par_offset;
+    s->par_queue[s->par_count].track = track;
+    s->par_queue[s->par_count].reset = !e;
+    if (e) s->par_queue[s->par_count].event = *e;
+    s->par_count++;
+    return MD_OK;
+}
+/* the second core's job: its tracks' operations in order and their segments, to the block's end (one session
+ * at a time). It reads the record and the cursors, writes its tracks' buffers and its result. */
 static md_session_t *par_session;
 static void par_job(uint32_t arg)
 {
     md_session_t *s = par_session;
-    uint32_t cursor[MD_TRACKS] = {0};
+    uint32_t cursor[MD_TRACKS], mine = s->par_now;
+    played_t p = {0};
     (void)arg;
-    for (uint32_t i = 0; i < s->par_count; i++) {
-        uint32_t at = s->par_queue[i].offset, t = s->par_queue[i].track;
-        if (at > cursor[t] && s->instrument[t]) {
-            md_instrument_render_add(s->instrument[t], s->track_buffer[t] + 2u * cursor[t], at - cursor[t]);
-            cursor[t] = at;
-        }
-        int applied = dispatch(s, &s->par_queue[i].event);
-        if (applied) { s->stats.event_errors++; note_error(s, applied); }
-    }
-    for (uint32_t t = 0; t < MD_TRACKS; t++)
-        if ((s->par_mask >> t & 1u) && s->par_frames > cursor[t] && s->instrument[t])
-            md_instrument_render_add(s->instrument[t], s->track_buffer[t] + 2u * cursor[t], s->par_frames - cursor[t]);
-}
-/* make the block serial from here: the queued part done now, on this core */
-static void par_inline(md_session_t *s, uint32_t *cursor, uint32_t at)
-{
-    uint32_t keep = s->par_frames;
-    s->par_frames = at;
-    par_session = s;
-    par_job(0);
-    s->par_frames = keep;
-    for (uint32_t t = 0; t < MD_TRACKS; t++) if (s->par_mask >> t & 1u) cursor[t] = at;
-    s->par_count = 0;
-    s->parallel_off = 1;
+    for (uint32_t t = 0; t < MD_TRACKS; t++) cursor[t] = mine >> t & 1u ? s->cursor[t] : 0u;   /* (its own only) */
+    play(s, mine, 1, cursor, &p);
+    s->par_result.errors = p.errors;
+    s->par_result.rejected = p.rejected;
+    s->par_result.last = p.last;
+    s->par_result.fault = p.fault;
 }
 int md_session_render(md_session_t *s, int32_t *out, uint32_t frames)
 {
@@ -581,6 +654,14 @@ int md_session_render(md_session_t *s, int32_t *out, uint32_t frames)
     control[0] = s->control_request[0];
     control[1] = s->control_request[1];
     MD_FENCE();
+    for (uint32_t t = 0; s->fault_mask && t < MD_TRACKS; t++) if (s->fault_mask >> t & 1u) {
+        /* an instrument refused an event the router had taken as done (the last block, played): as the router
+         * does with a backend fault, its notes and the instrument cleared */
+        md_event_t panic = {.kind = MD_EVENT_PANIC, .track = (uint8_t)t, .source = MD_SOURCE_NONE};
+        (void)md_router_event(&s->router, &panic);
+        s->router.backend_errors++;
+    }
+    s->fault_mask = 0;
     uint32_t commands = 0;
     md_command_t c;
     while (commands < MD_COMMAND_CAPACITY && md_ring_pop(&s->ring, &c)) {
@@ -615,70 +696,85 @@ int md_session_render(md_session_t *s, int32_t *out, uint32_t frames)
     }
 
     PROF(MD_PROF_DRAIN);
-    uint32_t bytes = 2u * frames * sizeof(int32_t);
-    for (uint32_t t = 0; t < MD_TRACKS; t++) memset(s->track_buffer[t], 0, bytes);
+    for (uint32_t t = 0; t < MD_TRACKS; t++) md_clear32(s->track_buffer[t], 2u * frames);
     PROF(MD_PROF_CLEAR);
     int status = md_seq_begin(&s->seq, &s->clock, frames);
     if (status) { note_error(s, status); return status; }
-    uint32_t cursor[MD_TRACKS] = {0}, events = 0;
-    uint32_t par = s->par_mask && !st->parallel_failed ? s->par_mask : 0u;   /* the tracks core 1 renders */
-    s->par_count = 0;
-    s->par_frames = frames;
-    s->parallel_off = !par;
+    if ((status = md_mixer_begin(&s->mixer, frames))) { note_error(s, status); return status; }   /* (each core adds
+                                                             * its tracks as it finishes them) */
+    uint32_t events = 0;
+    uint32_t par = s->par_mask && !st->parallel_failed ? s->par_mask : 0u;   /* the tracks core 1 renders (0: one core) */
+    for (uint32_t t = 0; t < MD_TRACKS; t++) s->cursor[t] = 0;
     md_seq_event_t e;
-    while ((status = md_seq_next(&s->seq, &e)) > 0) {
-        uint32_t at = e.timed.offset < frames ? e.timed.offset : frames;
-        uint32_t mask = touched(&e.timed.event);
-        events++;
-        if (!s->parallel_off) {
-            if (mask && !(mask & (mask - 1u)) && (mask & par) && s->par_count < s->par_limit) {   /* core 1's, later */
-                uint8_t t = 0;
-                while (!(mask >> t & 1u)) t++;
-                s->par_queue[s->par_count].offset = at;
-                s->par_queue[s->par_count].track = t;
-                s->par_queue[s->par_count++].event = e.timed.event;
-                continue;
-            }
-            if (mask & par) par_inline(s, cursor, at);                      /* shared event or full queue */
+    if (par) {
+        /* routed: every event of the block through the router, its instrument calls recorded; nothing rendered */
+        s->par_count = 0;
+        s->par_frames = frames;
+        s->par_flushed = 0;
+        s->router.sink = op_sink;
+        s->router.sink_context = s;
+        while ((status = md_seq_next(&s->seq, &e)) > 0) {
+            s->par_offset = e.timed.offset < frames ? e.timed.offset : frames;
+            events++;
+            int applied = dispatch(s, &e.timed.event);
+            if (applied) { st->event_errors++; note_error(s, applied); }
         }
-        for (uint32_t t = 0; t < MD_TRACKS; t++) if (mask >> t & 1u) render_track(s, t, cursor, at);
-        int applied = dispatch(s, &e.timed.event);
-        if (applied) { st->event_errors++; note_error(s, applied); }
-    }
-    if (status < 0) {
-        /* The sequencer stopped itself and scheduled a flush; release now as well. */
-        st->seq_faults++;
-        note_error(s, status);
-        if (!s->parallel_off) par_inline(s, cursor, frames);
-        for (uint32_t t = 0; t < MD_TRACKS; t++) render_track(s, t, cursor, frames);
-        (void)release_sequencer_sources(s);
-    }
-    if (!s->parallel_off) {
-        /* the parallel track on the second core while this one renders the rest */
+        if (status < 0) {
+            /* The sequencer stopped itself and scheduled a flush; release now as well (at the block's end). */
+            st->seq_faults++;
+            note_error(s, status);
+            s->par_offset = frames;
+            (void)release_sequencer_sources(s);
+        }
+        s->router.sink = NULL;
+        PROF(MD_PROF_ROUTE);
+        /* played: core 1 its tracks, this one the rest, both from the block's start */
+        played_t own = {0};
+        if (s->par_balance) par = balance(s, par);
+        s->par_now = (uint8_t)par;
         par_session = s;
         int taken = s->parallel.run(par_job, 0);
-        for (uint32_t t = 0; t < MD_TRACKS; t++) if (!(par >> t & 1u)) render_track(s, t, cursor, frames);
+        play(s, MD_ALL_TRACK_MASK & ~par, 0, s->cursor, &own);
+        played(s, &own);
         if (!taken) { par_job(0); st->parallel_inline++; }
-        else if (s->parallel.wait()) {
-            /* held, possibly mid-event: not redone; the track panicked here (core 1 is stopped), then one core */
+        if (taken && s->parallel.wait()) {
+            /* held, possibly mid-event: not redone; its tracks panicked here (core 1 is stopped), then one core */
             for (uint32_t t = 0; t < MD_TRACKS; t++) if (par >> t & 1u) {
                 md_event_t panic = {.kind = MD_EVENT_PANIC, .track = (uint8_t)t, .source = MD_SOURCE_NONE};
                 (void)md_router_event(&s->router, &panic);
             }
             st->parallel_failed = 1;
+        } else {
+            played_t theirs = {s->par_result.errors, s->par_result.rejected, s->par_result.last, s->par_result.fault};
+            played(s, &theirs);
+            if (taken) st->parallel_blocks++;
         }
-        else st->parallel_blocks++;
+        if (s->par_flushed) st->parallel_fallbacks++;
     } else {
-        if (par) st->parallel_fallbacks++;
-        for (uint32_t t = 0; t < MD_TRACKS; t++) render_track(s, t, cursor, frames);
+        while ((status = md_seq_next(&s->seq, &e)) > 0) {
+            uint32_t at = e.timed.offset < frames ? e.timed.offset : frames;
+            uint32_t mask = touched(&e.timed.event);
+            events++;
+            for (uint32_t t = 0; t < MD_TRACKS; t++) if (mask >> t & 1u) render_track(s, t, s->cursor, at);
+            int applied = dispatch(s, &e.timed.event);
+            if (applied) { st->event_errors++; note_error(s, applied); }
+        }
+        if (status < 0) {
+            /* The sequencer stopped itself and scheduled a flush; release now as well. */
+            st->seq_faults++;
+            note_error(s, status);
+            for (uint32_t t = 0; t < MD_TRACKS; t++) render_track(s, t, s->cursor, frames);
+            (void)release_sequencer_sources(s);
+        }
+        for (uint32_t t = 0; t < MD_TRACKS; t++) {
+            render_track(s, t, s->cursor, frames);
+            if (s->instrument[t]) (void)md_mixer_add_track(&s->mixer, t, s->track_buffer[t]);
+        }
     }
     st->events += events;
     if (events > st->max_block_events) st->max_block_events = events;
 
     PROF(MD_PROF_EVENTS);
-    if ((status = md_mixer_begin(&s->mixer, frames))) { note_error(s, status); return status; }
-    for (uint32_t t = 0; t < MD_TRACKS; t++)
-        if (s->instrument[t]) (void)md_mixer_add_track(&s->mixer, t, s->track_buffer[t]);
     if ((status = md_mixer_finish(&s->mixer, out))) { note_error(s, status); return status; }
     PROF(MD_PROF_MIX);
     if ((status = md_transport_advance(&s->clock, frames))) { note_error(s, status); return status; }

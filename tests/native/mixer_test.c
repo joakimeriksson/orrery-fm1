@@ -409,6 +409,58 @@ static int panic_unadded_tracks_solo_and_tempo(void)
     return 0;
 }
 
+/* Lanes: tracks added on the second lane (another core's) give the same output, meters and clamp count as on
+ * the first, whichever tracks go where, inserts and sends included. */
+static int lane_span(md_mixer_t *m, uint32_t start, uint32_t frames, unsigned lane1)
+{
+    if (md_mixer_begin(m, frames)) return 1;
+    for (uint32_t t = 0; t < MD_TRACKS; t++) {
+        static int32_t own[MD_TRACKS][2u * MD_MAX_RENDER_FRAMES];
+        memcpy(own[t], &input[t][2u * start], 2u * frames * sizeof own[t][0]);
+        if (md_mixer_add_track_lane(m, t, own[t], lane1 >> t & 1u)) return 1;
+    }
+    return md_mixer_finish(m, &output[2u * start]);
+}
+static int lanes_give_the_same_mix(void)
+{
+    for (uint32_t t = 0; t < MD_TRACKS; t++)
+        for (uint32_t i = 0; i < 2u * FRAMES; i++)                 /* loud enough to clamp now and then */
+            input[t][i] = (int32_t)((i * (2654435761u + t * 40503u)) >> 6) - (1 << 25);
+    static fx_slot_t ins[2], echo[2], rev[2];
+    md_mixer_meters_t want, got;
+    for (unsigned lane1 = 0; lane1 < (1u << MD_TRACKS); lane1 += 5u) {
+        md_mixer_t *both[2] = {&mixer, &other};
+        for (uint32_t k = 0; k < 2; k++) {
+            md_mixer_t *m = both[k];
+            CHECK(md_mixer_init(m) == MD_OK);
+            CHECK(!fx_make(&ins[k], &DELAY_INSERT, 0, 5) && !fx_make(&echo[k], &DELAY_BUS, 0, 33) && !fx_make(&rev[k], &DELAY_BUS, 0, 47));
+            CHECK(md_mixer_set_insert(m, 2, 0, &ins[k].e) == MD_OK);
+            CHECK(md_mixer_set_bus(m, 0, &echo[k].e) == MD_OK && md_mixer_set_bus(m, 1, &rev[k].e) == MD_OK);
+            for (uint32_t t = 0; t < MD_TRACKS; t++) {
+                CHECK(md_mixer_track_param(m, t, MD_MIX_LEVEL, 9000 + 5000 * (int32_t)t) == MD_OK);
+                CHECK(md_mixer_track_param(m, t, MD_MIX_PAN, -20000 + 10000 * (int32_t)t) == MD_OK);
+                CHECK(md_mixer_track_param(m, t, MD_MIX_ECHO_SEND, t & 1u ? 12000 : 0) == MD_OK);
+                CHECK(md_mixer_track_param(m, t, MD_MIX_REVERB_SEND, t >= 2u ? 20000 : 0) == MD_OK);
+            }
+            CHECK(md_mixer_reset(m) == MD_OK);
+            memset(output, 0, sizeof output);
+            for (uint32_t at = 0, n = 0; at < 1024u; at += n) {
+                n = 1u + (at * 37u) % 256u;
+                if (n > 1024u - at) n = 1024u - at;
+                if (at == 256u) CHECK(md_mixer_track_param(m, 1, MD_MIX_LEVEL, 30000) == MD_OK);   /* a gain on the move */
+                CHECK(!lane_span(m, at, n, k ? lane1 : 0u));
+            }
+            if (!k) { memcpy(reference, output, sizeof reference); md_mixer_meters(m, &want); }
+            else md_mixer_meters(m, &got);
+        }
+        CHECK(!memcmp(reference, output, 2u * 1024u * sizeof *output));
+        CHECK(!memcmp(&want, &got, sizeof want) && want.clamped > 0);
+    }
+    CHECK(md_mixer_begin(&mixer, 16) == MD_OK);
+    CHECK(md_mixer_add_track_lane(&mixer, 0, scratch, MD_MIX_LANES) == MD_ERR_ARGUMENT);
+    CHECK(md_mixer_finish(&mixer, output) == MD_OK);
+    return 0;
+}
 static int guards(void)
 {
     fx_slot_t ins, bus, spare;
@@ -481,6 +533,7 @@ int main(void)
     RUN(smoothing_and_partition_independence);
     RUN(bypass_crossfade_and_no_stale_history);
     RUN(panic_unadded_tracks_solo_and_tempo);
+    RUN(lanes_give_the_same_mix);
     RUN(guards);
     return 0;
 }

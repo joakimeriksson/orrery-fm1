@@ -5,7 +5,7 @@ Docker (fm1-harbor-proc build.sh) for the module; fm1-emu for the emulator runs.
 
 ## What changed
 
-`module/seventies.c` keeps the SEVENTIES panel, pages, knobs, screen and settings record (magic 7S01, layout
+`module/orrery.c` keeps the ORRERY panel, pages, knobs, screen and settings record (magic 7S01, layout
 unchanged), and replaces everything under them:
 
 - **One session.** Engine globals, the ARP 1601 and Mini Pops internal sequencers and the hand-made four-buffer mix
@@ -65,16 +65,16 @@ All fourteen native suites pass with ASan and UBSan (`python3 tests/run_native.p
 
 ## Target build and emulator
 
-    cd ~/work/fm1-harbor-proc && PYTHON=$HOME/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=$HOME/work/seventies-fm1 \
-      ./build.sh --no-package [--seqdock] --only --modules cs1,scintilla,$HOME/work/seventies-fm1/module
-    python3 tests/integration/seventies_emu.py      # in seventies-fm1, after both builds
+    cd ~/work/fm1-harbor-proc && PYTHON=$HOME/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=$HOME/work/orrery-fm1 \
+      ./build.sh --no-package [--seqdock] --only --modules cs1,scintilla,$HOME/work/orrery-fm1/module
+    python3 tests/integration/orrery_emu.py      # in orrery-fm1, after both builds
 
 | Image | Module | Worst block | Overruns |
 | --- | --- | ---: | ---: |
 | regular dock (fm1-dock_xip.bin) | code 57,228 B, data 16 B, BSS 122,276 B, no RAM code | 66.2 % | 0 |
 | seqdock (seqdock_xip.bin) | same module, CRC d8308b67 | 66.2 % | 0 |
 
-`tests/integration/seventies_emu.py` loads SEVENTIES, presses PLAY, holds a lead note from 6 to 8 s over the band
+`tests/integration/orrery_emu.py` loads ORRERY, presses PLAY, holds a lead note from 6 to 8 s over the band
 and records 12 s. Both images pass all seven checks: started on the session, 0 overruns, worst block under 70 %,
 no host reverb in the processing section (the baseline log had one: the room-off request works), the hi-hat's
 envelope repeats every 250 ms (correlation 0.80), the lead adds level (RMS 2093 to 3274), band RMS 2093 and peak
@@ -97,12 +97,12 @@ are the six `decode` cases for modules the emulator cannot decode, which fail be
 | build/modules/module.dock | b4316351b0da8b1d9e6bc39dae686dd1915fe34b3158fbf8f3c8168677de2ffc |
 | build/seqdock_xip.bin | 91c6fe6a0f51abea3901b43cf4d777a6294177bfc2e15dcf7623115b31df27ad |
 | build/fm1-dock_xip.bin | 0b257263457348b4bd61aceddb3d83b0c81fe70e1459d17bb3e7f44a5f314aca |
-| build/integration/seqdock/audio.wav (seventies-fm1) | 4b6cb15539292f2cfa1484495da4b77d5e22f694b3853c6aeaa5bcbff6638112 |
-| build/integration/fm1-dock/audio.wav (seventies-fm1) | e0b679c1c9adfba07c1f31a2b83bbfbd41acada89e72ca57f0633a6ab40917b4 |
+| build/integration/seqdock/audio.wav (orrery-fm1) | 4b6cb15539292f2cfa1484495da4b77d5e22f694b3853c6aeaa5bcbff6638112 |
+| build/integration/fm1-dock/audio.wav (orrery-fm1) | e0b679c1c9adfba07c1f31a2b83bbfbd41acada89e72ca57f0633a6ab40917b4 |
 
 | Source | SHA-256 |
 | --- | --- |
-| module/seventies.c | 822ac57d2a9bad118d5d979992f15b938cbf5ec199b09e1f8d685f9e76ef9a0e |
+| module/orrery.c | 822ac57d2a9bad118d5d979992f15b938cbf5ec199b09e1f8d685f9e76ef9a0e |
 | module/module.cfg | 47228a31bf749873ca92efd742ccf01bfb925a754b3f0437f78cfdff1b18e18b |
 | module/band.c | af3a0cd87ee23c953cb03eb56550ecea7245213c1785e5741c54fde4d6475f9c |
 | module/band.h | cf2640f9cfe4a6e4b3fcc9cf12181642db4a339520e5657db185e0d77400df6d |
@@ -114,12 +114,12 @@ are the six `decode` cases for modules the emulator cannot decode, which fail be
 | instruments/minipops.h | fcf61db2d4798311c28747a303171636f19fe9ddeff4d122f0ce708c449a17f9 |
 | tests/native/band_test.c | ecd0d38df02858702ddc549995ccda8beacfacc32ddba867d243fc663c461389 |
 | tests/native/adapters_test.c | 359b2e62de6617ea71331944b24c6eff53a6030f2845c9574610065d5f7f1b3f |
-| tests/integration/seventies_emu.py | a89ff66c14b3776e8f173bd2aff592a7aabcf46c0212489ebb1359e812347e5f |
+| tests/integration/orrery_emu.py | a89ff66c14b3776e8f173bd2aff592a7aabcf46c0212489ebb1359e812347e5f |
 
 ## The original module
 
-M3-04 overwrote module/seventies.c, which git did not hold (no commits). It was rebuilt in legacy/seventies-v1/
-and both files hash exactly as the M0-01 baseline recorded them (seventies.c 977fa670..., module.cfg 01837c6f...).
+M3-04 overwrote module/orrery.c, which git did not hold (no commits). It was rebuilt in legacy/v1/
+and both files hash exactly as the M0-01 baseline recorded them (v1.c 977fa670..., module.cfg 01837c6f...).
 The baseline's built module and image remain at build/baseline/.
 
 ## Limits
@@ -155,7 +155,7 @@ test fails. All fourteen native suites pass with ASan and UBSan; both images reb
 
 | File | SHA-256 after revision |
 | --- | --- |
-| module/seventies.c | 5a195e9950a008e8b6b638223af22425b45413e60d3b470be46fee5fcd32d54f |
+| module/orrery.c | 5a195e9950a008e8b6b638223af22425b45413e60d3b470be46fee5fcd32d54f |
 | module/band.c | ebd1bc7646eda57a96f0430b12408dd8cf833542833a3b613ec16b7083aabe27 |
 | module/band.h | f7619ec22a9a738ab20a4f17efa5abb8cbbb56a6276247aad6f4d699375dfb21 |
 | tests/native/band_test.c | 2c1bb942ffb0b8390f4519d8f3bd70812aeb27d5ed644d0c8fa86361a1254761 |

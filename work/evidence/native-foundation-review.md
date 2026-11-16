@@ -29,7 +29,7 @@ standalone checks, exact hashes and6bit-identical before/after raw renders.
 
 ElectronicFX references and inspected plots are linked from electronic-fx.md. These are unnormalized synthetic
 sound recipes, not reproductions of a specific recording. Clock/seq tests prove event timing/ownership in native
-harnesses, not physical hardware jitter or target block load. Legacy module/seventies.c/module.cfg have not been
+harnesses, not physical hardware jitter or target block load. Legacy module/orrery.c/module.cfg have not been
 switched to these new portable components. Audio-session/mixer/DSP/panel/project/MIDI integration and actual
 composing workflows remain their named gates, along with explicit ARP accent/legato/slide support in M1-05.
 No real FM-1 deployment or hardware test was attempted.

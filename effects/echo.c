@@ -86,7 +86,7 @@ static void set_tempo(void *state, uint16_t bpm_q8)
     targets(e);
 }
 /* the line value `delay` (Q8) line samples behind the write index */
-static int32_t tap(const md_fx_echo_t *e, int32_t delay_q8)
+MD_INLINE int32_t tap(const md_fx_echo_t *e, int32_t delay_q8)
 {
     uint32_t d = (uint32_t)delay_q8 >> 8, fr = (uint32_t)delay_q8 & 255u;
     uint32_t at = e->w + MD_ECHO_LEN - d;         /* d < MD_ECHO_LEN - 1: one wrap at most */
@@ -96,6 +96,7 @@ static int32_t tap(const md_fx_echo_t *e, int32_t delay_q8)
     int32_t b = e->line[before];
     return a + (((b - a) * (int32_t)fr) >> 8);
 }
+/* (not MD_HOT: the 16 KiB of RAM are full of dearer loops, and this one is 2 % of a block) */
 static void process(void *state, const int32_t *in, int32_t *wet, uint32_t frames)
 {
     md_fx_echo_t *e = state;

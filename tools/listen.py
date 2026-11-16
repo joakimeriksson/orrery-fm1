@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Listen to SEVENTIES' setups on the Mac: builds tools/render_setups.c (the module itself with a host of its own),
+"""Listen to ORRERY' setups on the Mac: builds tools/render_setups.c (the module itself with a host of its own),
 renders each setup and each of its parts alone, and prints what a mix engineer would ask.
 
     uv run --with numpy --with pillow tools/listen.py [SETUP ...] [--seconds 32] [--png] [--script S]
@@ -96,7 +96,7 @@ def main():
     ap.add_argument("--harbor", type=Path, default=ROOT.parent / "fm1-harbor-proc")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--script", default="")
-    ap.add_argument("--count", type=int, default=15, help="how many setups there are, when none is named")
+    ap.add_argument("--count", type=int, default=17, help="how many setups there are, when none is named")
     a = ap.parse_args()
     build(a.harbor)
     OUT.mkdir(parents=True, exist_ok=True)

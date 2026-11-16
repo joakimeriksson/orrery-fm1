@@ -1,4 +1,6 @@
-# SEVENTIES v1 (pre-session audio reference)
+# ORRERY v1 (pre-session audio reference)
+
+The module was called SEVENTIES then, and these bytes still say so: `v1.c` was `module/seventies.c`.
 
 The module as it was before M3-04: engine globals, the ARP 1601 and Mini Pops internal sequencers, a
 four-buffer mix and the host's reverb. Kept as the audio reference PLAN.md asks for.
@@ -7,7 +9,7 @@ Both files are byte-identical to the M0-01 baseline (work/evidence/baseline.md, 
 
 | File | SHA-256 |
 | --- | --- |
-| seventies.c | 977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be |
+| v1.c | 977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be |
 | module.cfg | 01837c6fb649e8006b3710ebb7303bc2462e15fd68026a3ce24a8385fa1fc6ee |
 
 The original was overwritten in module/ by M3-04 and rebuilt here from the session that replaced it; the

@@ -1,4 +1,4 @@
-# seventies-fm1 / meloDock: implementation plan
+# orrery-fm1 / meloDock: implementation plan
 
 Revised 2026-11-05. This is the design and delivery specification. Portable foundations now have native
 implementations; WORK.json records reviewed completion. Device integration and the full workflow remain gated.
@@ -11,9 +11,10 @@ this design document is not the progress ledger.
 ## Outcome and boundaries
 
 Build a playable four-part workstation with a reusable instrument API, one sequencer, editable drums, song
-arrangement, live recording, recallable sounds and safe project storage. SEVENTIES is the first instrument
+arrangement, live recording, recallable sounds and safe project storage. ORRERY (SEVENTIES until 2026-11-15) is the first instrument
 set: two ARP 2600 instances, Eminent strings and MiniPops percussion. Use **meloDock** as the working name for
-the composition layer; retain SEVENTIES as the module identity until storage migration is defined.
+the composition layer; the module identity is ORRERY (the owner's rename of 2026-11-15, before any release: the dock finds settings and
+banks by a module's name, so what a unit saved as SEVENTIES stays under that name, unread).
 
 The value is composing independently developed instruments inside fm1-dock. A new instrument should require
 an adapter, parameter descriptions and presets, without changing the clock, recorder, song player or storage
@@ -29,7 +30,7 @@ and arbitrary routing graphs are separate proposals, justified by measurement af
 | fm1-dock | hardware, audio callback, lifecycle, MIDI I/O, flash services, device EQ/protection and optional global room | song logic and project effects |
 | meloDock core | registry, transport, patterns/song, recording, routing, mix, project effects, schema | hardware registers, USB stack, engine DSP internals |
 | Instrument adapters | instance state, note/voice policy, parameter conversion, sound serialization | transport, project storage, panel scanning |
-| SEVENTIES UI/content | panel mapping, sound pages, presets and demo projects | another clock or direct writes to live DSP |
+| ORRERY UI/content | panel mapping, sound pages, presets and demo projects | another clock or direct writes to live DSP |
 
 ## Evidence and corrections
 
@@ -37,7 +38,7 @@ The first integrated build was reported as 23.8 KB code, 44.8 KB state, no RAM c
 block, 51% with lead, no underruns over 58 s. Strings alone were 13%, bass 6%, drums 5%. These historical
 baselines do not establish the cost of event splitting, automation, full polyphony or more effects.
 
-Today's `module/seventies.c` owns engine globals, mixes four buffers, runs the bass ARP and MiniPops internal
+Today's `module/orrery.c` owns engine globals, mixes four buffers, runs the bass ARP and MiniPops internal
 sequencers, and changes chords in the main loop by observing the bass link. It has neither a general instrument
 API nor an independent multitrack sequencer. Preserve this build as an audio reference while replacing its wiring.
 
@@ -334,7 +335,7 @@ two reserved banks with generation/commit records or an atomic host service, plu
 Optional indexed-bank slots require `HB_HOST_HAS`, free-capacity checks and allocation failure UI. One project
 must work on old hosts without indexed banks.
 
-Keep UI preferences in the <=240-byte settings record. Migrate today's small SEVENTIES settings explicitly
+Keep UI preferences in the <=240-byte settings record. Migrate today's small ORRERY settings explicitly
 where possible. Add computer export/import over `HB_F_DATA`, validating chunk order, duplicate chunks, bounds
 and checksum. This provides backup independent of extra flash capacity; it is not Melodee file compatibility.
 

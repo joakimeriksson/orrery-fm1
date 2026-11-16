@@ -50,7 +50,7 @@ Exact next actions:
 4. New shared contracts need review before dependent code; remain within task resource/file claims.
 
 Remaining limits:
-- Legacy module/seventies.c and module.cfg still use the old band/chord wiring; no claim the new UI/sequencer
+- Legacy module/orrery.c and module.cfg still use the old band/chord wiring; no claim the new UI/sequencer
   runs on device. No songs/recording/projectcodec/localFXrouting or real MIDIclock implementation yet.
 - ARP span output is notbitexact because of existing8sample call-local control cadence; measured defaultfixture
   peakdelta811, meanrelative0.10018%, explicittol1024/2%; Eminent/MP exact in representativepartition tests.
@@ -62,7 +62,7 @@ Remaining limits:
 
 Actual owner agent-a = root; cross-review agent-b = /root/audition_review.
 D0-01 implemented in isolated audition/; new portable seq/router actual synths,
-not legacy module/seventies. Native sanitized both modes PASS, independent
+not legacy module/orrery.c. Native sanitized both modes PASS, independent
 nextbar+ownership checks PASS. Target final34544B code/55056B BSS, pinned image
 build/seq-demo/melodock-test_xip.bin. Repeat emu43.8%worst/0overruns/no strikes.
 Launcher `python3 tools/run_seq_demo.py`; HOME picker -> PRESETS MELODOCK TEST ->

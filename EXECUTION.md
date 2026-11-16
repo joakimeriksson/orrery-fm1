@@ -44,7 +44,7 @@ integration against one tested checkout. Do not remove a lock file while process
 
 Agent A normally takes transport, sequencer, router, session, song, recorder and codec. Agent B normally takes
 adapters, effects, mixer, UI, storage integration and qualification. Review each other's work. Only M3-04 owns
-`module/seventies.c` and `module/module.cfg` for the initial migration; later integrations must explicitly claim
+`module/orrery.c` and `module/module.cfg` for the initial migration; later integrations must explicitly claim
 `module-integration` in addition to their own resource. Per-feature tests live under distinct native/integration
 files. Changes to shared headers use `contracts`; test runner edits use `native-harness`; changes to PLAN.md use
 `plan`; engine imports use `imports`. Additional shared edits need a separate task/claim, not informal overlap.
@@ -273,7 +273,7 @@ Acceptance: Stable resonance/feedback limits, smoothing, bypass/tail/reset, deno
 
 Suggested lane: A. Depends on: M3-01, M3-03, M1-05. Resources: module-integration.
 
-Paths: `module/seventies.c`, `module/module.cfg`, `tests/integration/`.
+Paths: `module/orrery.c`, `module/module.cfg`, `tests/integration/`.
 
 Keep current UI initially while replacing engine globals/clock wiring with adapters/session; local musical reverb, host room-off request outside render, capability checks and visible overrides.
 
@@ -303,7 +303,7 @@ Acceptance: Atomic edit publication, max-size admission, lock ownership, pattern
 
 Suggested lane: B. Depends on: M4-01. Resources: panel, ui-tests, module-integration.
 
-Paths: `module/ui.*`, `tests/integration/panel*`, `module/seventies.c`, `module/module.cfg`.
+Paths: `module/ui.*`, `tests/integration/panel*`, `module/orrery.c`, `module/module.cfg`.
 
 Descriptor-backed pages, named alternate rows, LEDs/header, track FX bindings, two sends, master sweep performance controls, modifiers and cursor preservation.
 
@@ -333,7 +333,7 @@ Acceptance: Quantize midpoint/wrap, end-of-pass releases, unsupported chord feed
 
 Suggested lane: B. Depends on: M4-02, M4-03, M4-04, M3-05. Resources: panel, ui-tests, module-integration.
 
-Paths: `module/ui.*`, `tests/integration/workflows*`, `work/evidence/workflows.md`, `module/seventies.c`, `module/module.cfg`.
+Paths: `module/ui.*`, `tests/integration/workflows*`, `work/evidence/workflows.md`, `module/orrery.c`, `module/module.cfg`.
 
 Song/record pages plus complete bass/chord/drum/lead composition, FX performance, copy/undo and arrangement scenarios.
 
@@ -343,7 +343,7 @@ Acceptance: Another agent reproduces all scenarios using only device controls an
 
 Suggested lane: B. Depends on: M4-01, M4-02. Resources: panel, sound-library, module-integration.
 
-Paths: `instruments/arp.*`, `module/sounds.*`, `module/seventies.c`, `tests/native/sound*`, `tests/integration/panel*`.
+Paths: `instruments/arp.*`, `module/sounds.*`, `module/orrery.c`, `tests/native/sound*`, `tests/integration/panel*`.
 
 Twenty sounds a part for the lead and bass (SOFT LEAD, the ten factory patches, nine new ones) with descriptive names only; a descriptor-backed sound editor with named rows, editing while playing, one-level undo; edited sounds saved with the project. The shared user library waits for the storage decision in PLAN.md.
 
@@ -363,7 +363,7 @@ Acceptance: Max payload <=8176 (target 8096), round-trip settings/notes/effects 
 
 Suggested lane: B. Depends on: M5-01, M3-04. Resources: module-storage, module-integration.
 
-Paths: `module/storage.*`, `tests/integration/storage*`, `module/seventies.c`, `module/module.cfg`.
+Paths: `module/storage.*`, `tests/integration/storage*`, `module/orrery.c`, `module/module.cfg`.
 
 SAVE pending while running, coherent snapshot, stopped erase, failure/dirty UI, factory fallback, old settings migration and optional indexed-bank capability checks.
 
@@ -373,7 +373,7 @@ Acceptance: Full bank/error/corrupt load/power-cycle paths preserve documented b
 
 Suggested lane: A. Depends on: M5-02. Resources: transfer, module-integration.
 
-Paths: `module/transfer.*`, `tools/project.py`, `tests/native/transfer*`, `module/seventies.c`, `module/module.cfg`.
+Paths: `module/transfer.*`, `tools/project.py`, `tests/native/transfer*`, `module/orrery.c`, `module/module.cfg`.
 
 HB_F_DATA bounded import staging and project export protocol/tool; validate lengths, ordering, retries, checksum and destination compatibility.
 
@@ -403,7 +403,7 @@ Acceptance: Host revision and patch/PR reference recorded; byte-level tests cove
 
 Suggested lane: B. Depends on: M6-01, M3-04. Resources: module-midi, module-integration.
 
-Paths: `module/midi.*`, `tests/integration/midi*`, `module/seventies.c`, `module/module.cfg`.
+Paths: `module/midi.*`, `tests/integration/midi*`, `module/orrery.c`, `module/module.cfg`.
 
 Channel routing through events, program/CC/bend/pressure/sustain, clock follower with bounded phase correction, source selection, timeout and no feedback loops.
 

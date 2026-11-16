@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* SEVENTIES: the seventies' synths of a Jarre record in one fm1-dock module, so they play together: the Eminent 310
+/* ORRERY: the seventies' synths of a Jarre record in one fm1-dock module, so they play together: the Eminent 310
  * strings as the bed, an ARP 2600 as the lead on the keys, a second 2600 as the bass with its 1601's sequences and
  * patterns, the Korg Mini Pops 7 as the drums, a tape echo with a send from the strings and the lead, a reverb, and a
  * chord a link of the bass pattern, so the strings move with the bass.
@@ -24,7 +24,7 @@
  *                                keys set the chord instead of playing the lead (the link under the cursor)
  *   FX            MIX page, FX again ECHO page: KNOB1..4 the four levels; ALGORITHM the reverb; on ECHO: ALGORITHM
  *                                the time (OFF, 1/16 .. 1/2 of the tempo), KNOB1..4 feedback, tone, the strings'
- *                                send, the lead's send
+ *                                send, the lead's send; SELECT the hall (HALLS: ROOM .. ENDLESS)
  *   keys          play the page's part: the strings on STRINGS / CHORDS, the bass on BASS, else the lead
  *   SEL           solo the page's part (again: everyone); the header says SOLO
  *   FX held       KNOB1 sweeps the master low-pass cutoff, KNOB2 its resonance (FX alone still changes page)
@@ -32,7 +32,8 @@
  *                 over the page for two seconds; each setup
  *                 is a scene: AMBIENT (the default: slow strings, soft bass, soft drums, the effects box, a lead with
  *                 a background run, droplets and rising chirps, long echo, big hall: six parts) or BAND;
- *                 SEL on PARTS rounds the background parts: none, the box's run, the lead's phrase, both
+ *                 SEL on PARTS rounds the background parts: none, the box's run, then each of the lead's phrases
+ *                 (HARP, LONG TONES, BELLS, CALLS) without the run and with it
  *   FX            cycles MIX (four levels, reverb, scene), PARTS (the wind's level and colour, the effects box, the lead's echo
  *                 send; ALGORITHM its reverb; SELECT the gestures' speed; the keys play the box: see fx_key), FX SEQ
  *                 and ECHO
@@ -70,8 +71,8 @@
 #include "engines/arp_presets.h"
 #include "engines/mp_engine.h"
 
-#define SET_MAGIC 0x45315337u                   /* "7S1E": the effect sequence in the record, an event five bytes */
-#define SETUPS_MAGIC 0x33533753u                /* "S7S3": the setups' bank (bank 1): all of them, with their sequences
+#define SET_MAGIC 0x31305252u                   /* "RR01": ORRERY's record (the hall and the phrase's style in it) */
+#define SETUPS_MAGIC 0x31425252u                /* "RRB1": the setups' bank (bank 1): all of them, with their sequences
                                                  * (its size is checked too: a bank of another count is the factory's) */
 #define C_ACC HB_RGB(255, 150, 60)              /* orange, as the decade's panels */
 #define C_CREAM HB_RGB(235, 205, 130)
@@ -95,7 +96,15 @@ static const uint8_t KIND_IV[N_KINDS][4] = {{0, 0, 0, 0}, {0, 3, 7, 12}, {0, 4, 
 static const char *const NOTE_NAME[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 #define N_RUNS 7u
 #define RUN_MAX 24u
-static const char *const BG_NAME[4] = {"NONE", "FX RUN", "LEAD PHRASE", "RUN + PHRASE"};
+/* AMBIENT's lead phrases (band.c: lead_phrase), and the halls: the reverb's kind, size and damping as one choice */
+static const char *const PHRASE_NAME[MD_BAND_PHRASES + 1u] = {"NONE", "HARP", "LONG TONES", "BELLS", "CALLS"};
+#define N_HALLS 8u
+#define HALL_BAND 2u
+#define HALL_AMBIENT 3u
+static const struct { const char *name; uint8_t kind, size, damping; } HALLS[N_HALLS] = {
+    {"ROOM", MD_REVERB_ROOM, 60, 45}, {"PLATE", MD_REVERB_PLATE, 80, 30}, {"HALL", MD_REVERB_HALL, 70, 50},
+    {"BIG HALL", MD_REVERB_HALL, 90, 35}, {"DARK HALL", MD_REVERB_HALL, 100, 65}, {"CATHEDRAL", MD_REVERB_CATHEDRAL, 45, 40},
+    {"VAST", MD_REVERB_CATHEDRAL, 70, 45}, {"ENDLESS", MD_REVERB_CATHEDRAL, 100, 35}};
 static const char *const RUN_NAME[N_RUNS] = {"OFF", "PENTA FAST", "PENTA 1/16", "SCALE FAST", "SCALE 1/16", "CHORD FAST", "CHORD 1/16"};
 static const char *const EC_DIV_NAME[7] = {"OFF", "1/16", "1/8", "1/8.", "1/4", "1/4.", "1/2"};
 static const char *const REG_NAME[EM_N_REG] = {"STRINGS", "CELLO", "VIOLIN", "FULL"};
@@ -126,12 +135,12 @@ typedef struct {                                /* the settings: the module's re
     uint8_t wind_col;                           /* PARTS page: the wind's colour, low to high */
     uint8_t lead_soft;                          /* the lead: 0 the 2600's lead_patch, 1 SOFT LEAD, 2 the Synthex's lead_sx */
     uint8_t setup;                              /* which of the setups this is */        
-    uint8_t spare;                              /* (was BAND's box: the effect sequence says what the box plays) */
+    uint8_t hall;                               /* ECHO + SELECT: the reverb's hall (HALLS) */
     uint8_t motion;                             /* MIX + SELECT: the slow filter sweeps' depth, percent */
     uint8_t lead_sx;                            /* the Synthex patch (0..79) when lead_soft is 2 */
     uint8_t run;                                /* LEAD + SELECT: a key plays a rising run (0 off; in the tail padding) */
     int8_t fx_speed;                            /* PARTS + SELECT: the gestures' speed, -4 slow .. +4 fast (0 as made) */
-    uint8_t phrase;                             /* AMBIENT: the lead plays its slow phrase (PARTS + SEL; the last pad byte) */
+    uint8_t phrase;                             /* AMBIENT: the lead's own phrase, 0 none or its style (PARTS + SEL) */
     md_band_fx_event_t fx[MD_BAND_FX_EVENTS];   /* FX SEQ: the effect sequence, what the effects box plays by itself */
 } set_t;
 _Static_assert(sizeof(set_t) <= 240u, "the settings record");
@@ -224,6 +233,7 @@ static void band_settings(md_band_settings_t *b)
     b->scene = set.scene;
     b->amb_arp = set.amb_arp;
     b->phrase = set.phrase;
+    b->phrase_shift = set.lead_soft == 2u && set.lead_sx == 28u ? -12 : 0;   /* the Synthex's Chimes speak three octaves up */
     for (k = 0; k < MD_BAND_FX_EVENTS; k++) b->fx[k] = set.fx[k];
 }
 static int send_bank(void)
@@ -257,7 +267,17 @@ static int send_list(uint8_t track, const int32_t (*list)[2], uint32_t n)
 #define LEAD_BASE (set.lead_soft == 1u ? SOFT_BASE : set.lead_patch % ARP_N_PATCHES)
 #define SX_FIRST (2u + ARP_N_PATCHES)            /* the Synthex patches after the 2600's */
 #define N_LEAD_SOUNDS (SX_FIRST + MD_SYNTHEX_PATCHES - 1u)
-#define SX_LEVEL 40                              /* the Synthex's own level: its patches are loud */
+/* the Synthex's own level: its patches are loud, and not equally: the struck and the soft ones (a held G4 measured,
+ * tools scratch sx.c) come up to where the brass and the laser harp sit at 40 */
+static int32_t sx_level(uint32_t patch)
+{
+    switch (patch) {
+    case 28: return 55;                          /* Chimes */
+    case 29: return 85;                          /* Vibes */
+    case 60: case 73: case 74: case 44: return 80;   /* Plink, Marimba, Harp, Echo: plucked, they fall away */
+    default: return 40;
+    }
+}
 static uint32_t sx_ring;                         /* "Ring mod.": the laser harp */
 static uint32_t lead_pos(void)
 {
@@ -303,7 +323,7 @@ static int send_lead(void)
     static const uint8_t LEAD_TRIM[ARP_N_PATCHES] = {62, 100, 100, 41, 68, 72, 100, 100, 100, 69};
     const arp_patch_t *q = &ARP_PATCHES[LEAD_BASE];
     if (set.lead_soft == 2u)                     /* the Synthex: its patch and level (the 2600's knobs rest) */
-        return param(T_LEAD, MD_SYNTHEX_PATCH, set.lead_sx) || param(T_LEAD, MD_SYNTHEX_LEVEL, SX_LEVEL);
+        return param(T_LEAD, MD_SYNTHEX_PATCH, set.lead_sx) || param(T_LEAD, MD_SYNTHEX_LEVEL, sx_level(set.lead_sx));
     if (set.lead_soft == 1u && send_list(T_LEAD, SOFT, sizeof SOFT / sizeof SOFT[0])) return 1;
     return param(T_LEAD, MD_ARP_CUTOFF, clamp8((int32_t)q->cutoff + set.lead_cut, 0, 100)) ||
            param(T_LEAD, MD_ARP_RESONANCE, set.lead_res == 255u ? q->reso : set.lead_res) ||
@@ -361,7 +381,8 @@ static int send_strings(void)
 }
 static int send_drums(void)
 {
-    return param(T_DRUMS, MD_MINIPOPS_LEVEL, 100) || param(T_DRUMS, MD_MINIPOPS_BALANCE, set.rh_balance) ||
+    /* (its level is the mix's; with that at nothing the machine strikes nothing: no work for no sound) */
+    return param(T_DRUMS, MD_MINIPOPS_LEVEL, set.lvl[3] ? 100 : 0) || param(T_DRUMS, MD_MINIPOPS_BALANCE, set.rh_balance) ||
            param(T_DRUMS, MD_MINIPOPS_QUIJADA, set.rh_extra) || param(T_DRUMS, MD_MINIPOPS_GUIRO, set.rh_extra) ||
            param(T_DRUMS, MD_MINIPOPS_TAMBOURINE, set.rh_extra);
 }
@@ -377,7 +398,8 @@ static int send_mix(void)
         if (param(TRACK_OF[k], MD_TARGET_MIXER | MD_MIX_LEVEL, q15(set.lvl[k]))) return 1;
         if (param(TRACK_OF[k], MD_TARGET_MIXER | MD_MIX_REVERB_SEND, q15(rev))) return 1;
     }
-    return param(T_FX, MD_TARGET_MIXER | MD_MIX_LEVEL, q15(set.lvl_fx)) ||
+    return param(T_DRUMS, MD_MINIPOPS_LEVEL, set.lvl[3] ? 100 : 0) ||
+           param(T_FX, MD_TARGET_MIXER | MD_MIX_LEVEL, q15(set.lvl_fx)) ||
            param(T_FX, MD_TARGET_MIXER | MD_MIX_REVERB_SEND, q15(65));
 }
 static int send_echo(void)
@@ -396,8 +418,9 @@ static int send_scene(void)
     return command(MD_CMD_BIND, T_LEAD, 0, set.lead_soft == 2u ? 1u : 0u) ||   /* the Synthex or the 2600 */
            command(MD_CMD_BIND, T_STRINGS, 0, STR_ENS ? 1u : 0u) ||           /* an ENSEMBLE pad or the Eminent */
            command(MD_CMD_BYPASS, T_STRINGS, 0, AMBIENT || set.motion ? 0u : 1u) ||
-           param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_SIZE, AMBIENT ? 90 : 70) ||
-           param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_DAMPING, AMBIENT ? 35 : 50);
+           param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_ALGORITHM, HALLS[set.hall % N_HALLS].kind) ||
+           param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_SIZE, HALLS[set.hall % N_HALLS].size) ||
+           param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_DAMPING, HALLS[set.hall % N_HALLS].damping);
 }
 static void pump(void)                          /* main loop: send what changed, in order */
 {
@@ -424,6 +447,7 @@ static void scene_defaults(void)
     set.str_reg = EM_STRINGS; set.str_ens = 100; set.str_col = 1; set.str_oct = 1;
     set.lead_patch = 3; set.lead_cut = 0; set.lead_res = set.lead_glide = 255; set.bass_patch = 7; set.bass_cut = 0;
     set.rh_keys = 0; set.rh_balance = 50; set.rh_extra = 70; set.ec_div = 3;
+    set.hall = AMBIENT ? HALL_AMBIENT : HALL_BAND;
     if (AMBIENT) {
         /* Oxygène-like: 75 BPM, slow strings, a soft bass (or the wind), gliding lead with its background run,
          * droplets and rising chirps, a long echo and a big hall */
@@ -474,7 +498,8 @@ static void factory(uint32_t i)
     if (f->depth != PAD_OWN) set.str_ens = f->depth;
     if (f->phaser != PAD_OWN) set.str_ph = f->phaser;
     lead_set(f->lead);
-    set.amb_arp = f->run != 0; set.phrase = f->phrase != 0;
+    set.amb_arp = f->run != 0; set.phrase = f->phrase <= MD_BAND_PHRASES ? f->phrase : 0;
+    set.hall = (uint8_t)(f->hall % N_HALLS);
     set.bass_patch = f->bass; set.bass_cut = f->bass_cut;
     set.rh_keys = f->rhythm ? (uint16_t)(1u << ((f->rhythm - 1u) % 10u)) : 0u;
     set.rh_section = f->rhythm > 10u; set.rh_xmask = f->extras; set.rh_extra = f->extras_level; set.rh_balance = f->balance;
@@ -491,7 +516,7 @@ static void sanitize(void)                       /* a record or a bank from flas
     if (set.amb_arp > 1u) set.amb_arp = 1;
     if (set.lead_soft > 2u) set.lead_soft = 1;
     if (set.lead_sx >= MD_SYNTHEX_PATCHES) set.lead_sx = (uint8_t)sx_ring;
-    set.spare = 0;
+    if (set.hall >= N_HALLS) set.hall = AMBIENT ? HALL_AMBIENT : HALL_BAND;
     for (uint32_t k = 0; k < MD_BAND_FX_EVENTS; k++) {
         md_band_fx_event_t *e = &set.fx[k];
         if (e->sound >= N_FX_SOUNDS || e->at >= MD_BAND_FX_SPAN || e->degree >= MD_BAND_FX_DEGREES || e->chance > 100u ||
@@ -500,7 +525,7 @@ static void sanitize(void)                       /* a record or a bank from flas
     }
     if (set.run >= N_RUNS) set.run = 0;
     if (set.fx_speed < -4 || set.fx_speed > 4) set.fx_speed = 0;
-    if (set.phrase > 1u) set.phrase = 0;
+    if (set.phrase > MD_BAND_PHRASES) set.phrase = 0;
     if (set.motion > 100u) set.motion = 50;
     if (set.lvl_wind > 100u) set.lvl_wind = 60;
     if (set.wind_col > 100u) set.wind_col = 45;
@@ -554,9 +579,9 @@ static void save_all(void)                       /* SAVE: this setup's record an
     H->save(&set, sizeof set);
     store.s[set.setup % N_SETUPS] = set;
     store.magic = SETUPS_MAGIC;
-    if (HB_HOST_HAS(H, bank_save_n) && H->bank_save_n(1, &store, sizeof store) < 0) H->log("seventies: no bank for the setups");
+    if (HB_HOST_HAS(H, bank_save_n) && H->bank_save_n(1, &store, sizeof store) < 0) H->log("orrery: no bank for the setups");
     dirty = 0;
-    H->log("seventies: saved");
+    H->log("orrery: saved");
 }
 /* the wind plays while AMBIENT runs: the box swells it in and out (about a second) and sweeps it itself */
 static void wind_sweep(void)
@@ -1041,7 +1066,8 @@ static void draw_body(uint32_t full)
         H->text(4, 156, 232, 0, "RISE FALL ARC SPARKLE", C_CREAM, 1);
         H->text(4, 167, 232, 0, "DROPS UP/DN METAL BUBBLE", C_CREAM, 1);
         H->text(4, 178, 232, 0, "F# GUST  BLACK ONE-SHOTS", C_CREAM, 1);
-        p = put_s(line, "SEL BG: "); put_s(p, BG_NAME[set.amb_arp | set.phrase << 1]);
+        p = put_s(line, "SEL BG: "); p = put_s(p, set.amb_arp ? set.phrase ? "RUN + " : "FX RUN" : "");
+        put_s(p, set.phrase || !set.amb_arp ? PHRASE_NAME[set.phrase % (MD_BAND_PHRASES + 1u)] : "");
         H->text(4, 189, 232, 0, line, AMBIENT ? C_GREY : C_DIM, 1);
         H->text(4, 200, 232, 0, "FX AGAIN: FX SEQUENCE", C_GREY, 1);
         break;
@@ -1104,7 +1130,9 @@ static void draw_body(uint32_t full)
         draw_knobs(K_ECHO, vals, bar, lit);
         p = put_s(line, "TIME "); p = put_s(p, EC_DIV_NAME[set.ec_div % 7u]); put_s(p, "   (ALGORITHM)");
         H->text(4, 136, 232, 0, line, set.ec_div ? C_WHITE : C_GREY, 0);
-        H->text(4, 158, 232, 0, "SENDS: BASS AND DRUMS DRY", C_GREY, 0);
+        p = put_s(line, "HALL "); p = put_s(p, HALLS[set.hall % N_HALLS].name); put_s(p, "   (SELECT)");
+        H->text(4, 158, 232, 0, line, C_CREAM, 0);
+        H->text(4, 180, 232, 0, "SENDS: BASS AND DRUMS DRY", C_GREY, 1);
         H->text(4, 200, 232, 0, "FX AGAIN: THE MIX", C_GREY, 1);
         break;
     }
@@ -1500,9 +1528,9 @@ static void ui(uint32_t ev, int32_t arg)
         case HB_BTN_FX: fx_held = 1; fx_used = 0; break;   /* the page changes on release, if no knob was turned */
         case HB_BTN_SEL:
             if (set.page == PG_PARTS) {          /* the background parts round: none, the box's run, the lead's phrase, both */
-                uint32_t bg = (set.amb_arp | set.phrase << 1) + 1u;
+                uint32_t bg = ((uint32_t)set.amb_arp | (uint32_t)set.phrase << 1) + 1u;   /* (then each phrase, without and with) */
                 if (running) band(0);
-                set.amb_arp = (uint8_t)(bg & 1u); set.phrase = (uint8_t)(bg >> 1 & 1u);
+                set.amb_arp = (uint8_t)(bg & 1u); set.phrase = (uint8_t)((bg >> 1) % (MD_BAND_PHRASES + 1u));
                 todo |= G_BANK;
                 touch();
             } else solo_toggle();
@@ -1557,6 +1585,7 @@ static void ui(uint32_t ev, int32_t arg)
                 fx_cur = clamp8((int32_t)fx_cur + arg, 0, MD_BAND_FX_EVENTS - 1);
                 fx_audition();
             }
+            else if (set.page == PG_ECHO && arg) { set.hall = clamp8((int32_t)set.hall + arg, 0, N_HALLS - 1); todo |= G_SCENE; touch(); }
             else if (set.page == PG_MIX) {
                 uint8_t was_on = set.motion != 0;
                 set.motion = clamp8(set.motion + 5 * arg, 0, 100);
@@ -1698,7 +1727,7 @@ static int init(const hb_host_t *h)
         md_instrument_init(&inst[T_FX], &MD_ELECTRONIC_FX, &fx_state, sizeof fx_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&sx, &MD_SYNTHEX, &sx_state, sizeof sx_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&ens, &MD_ENSEMBLE, &ens_state, sizeof ens_state, MD_SAMPLE_RATE)) {
-        H->log("seventies: an instrument or effect failed to start");
+        H->log("orrery: an instrument or effect failed to start");
         return 1;
     }
     /* the presets before the session, which reads them as its parameter bases */
@@ -1719,24 +1748,33 @@ static int init(const hb_host_t *h)
     c.alternate[T_STRINGS] = &ens;
     /* five parts are over one core's budget: some render on the second core
      * while this one renders the rest; the session does it here when the core is not available */
+#ifdef ORRERY_ONE_CORE                        /* (a timing build: every part's own cost, in fm1-emu too) */
+    if (0) {
+#else
     if (HB_HOST_HAS(H, c1_wait)) {
+#endif
         c.parallel.run = H->c1_run;
         c.parallel.wait = H->c1_wait;
         c.parallel_track = T_STRINGS;
-        /* the lead and the bass on core 1, the rest here: measured best with the Synthex playing a melody over
-         * LASER (58.5 % of a block here; strings and lead there 73 %, the lead alone there 65 %, lead, bass and
-         * drums there 60.4 %); the one Eminent and the one Synthex each stay on their core */
-#ifndef SEVENTIES_CORE1
-#define SEVENTIES_CORE1 ((1u << T_LEAD) | (1u << T_BASS))
+        /* the parts shared between the cores by what each costs, block by block (the session, with the host's
+         * counter): a setup's dear part is not always the same one (the Synthex as the lead, a wave with gulls
+         * from the effects box), and fm1-emu cannot tell (its second core costs next to nothing). They start
+         * with the strings and the box on core 1. Any part may go to either core: there is one Eminent, one
+         * ENSEMBLE and one Synthex, and the 2600 keeps nothing outside its state. */
+#ifndef ORRERY_CORE1
+#define ORRERY_CORE1 ((1u << T_STRINGS) | (1u << T_FX))
 #endif
-        c.parallel_mask = (uint8_t)(SEVENTIES_CORE1);
+        c.parallel_mask = (uint8_t)(ORRERY_CORE1);
+#ifndef ORRERY_FIXED_CORES
+        if (HB_HOST_HAS(H, ticks)) { c.parallel.ticks = H->ticks; c.parallel_balance = 1; }
+#endif
     } else c.parallel_track = 0xffu;
     c.bank = &first_bank;
     c.bpm_q8 = (uint16_t)(set.tempo * 256u);
 #ifdef MD_STRESS_HOOK
     MD_STRESS_HOOK(0, &c);                       /* tests/stress only: change bindings before the session */
 #endif
-    if (md_session_init(&S, &c)) { H->log("seventies: the session failed to start"); return 1; }
+    if (md_session_init(&S, &c)) { H->log("orrery: the session failed to start"); return 1; }
     reverb_room();
     for (k = 0; k < 27u; k++) key_token[k] = 0;
     for (k = 0; k < 16u * 128u; k++) midi_token[k / 128u][k % 128u] = 0;
@@ -1750,7 +1788,7 @@ static int init(const hb_host_t *h)
 #ifdef MD_STRESS_HOOK
     MD_STRESS_HOOK(1, &c);                       /* tests/stress only: the stress case's bank, notes and start */
 #endif
-    H->log("seventies: strings, lead, bass, drums on one session");
+    H->log("orrery: strings, lead, bass, drums on one session");
     return 0;
 }
 static void release(void)
@@ -1760,4 +1798,4 @@ static void release(void)
     (void)md_session_submit(&S, &p);
 }
 
-HB_DESC = {HB_ABI, "SEVENTIES", init, release, note, cc, render, ui, draw, 0, 0, HB_F_SCREEN | HB_F_PANEL, midi};
+HB_DESC = {HB_ABI, "ORRERY", init, release, note, cc, render, ui, draw, 0, 0, HB_F_SCREEN | HB_F_PANEL, midi};

@@ -4,19 +4,19 @@
 #include "effects.h"
 #include "fx_tables.h"
 
-static inline int32_t fx_clamp(int32_t v, int32_t lo, int32_t hi) { return v < lo ? lo : v > hi ? hi : v; }
-static inline int32_t fx_in(int32_t v) { return fx_clamp(v, -MD_FX_INPUT_LIMIT, MD_FX_INPUT_LIMIT); }
+MD_INLINE int32_t fx_clamp(int32_t v, int32_t lo, int32_t hi) { return v < lo ? lo : v > hi ? hi : v; }
+MD_INLINE int32_t fx_in(int32_t v) { return fx_clamp(v, -MD_FX_INPUT_LIMIT, MD_FX_INPUT_LIMIT); }
 /* Multiply then arithmetic shift, as the engines' MUL. */
-static inline int32_t fx_mul(int32_t a, int32_t b, int sh) { return (int32_t)(((int64_t)a * b) >> sh); }
+MD_INLINE int32_t fx_mul(int32_t a, int32_t b, int sh) { return (int32_t)(((int64_t)a * b) >> sh); }
 /* Same, rounding toward zero, so integer decays reach exactly zero (no -1 limit cycle). */
-static inline int32_t fx_mulz(int32_t a, int32_t b, int sh)
+MD_INLINE int32_t fx_mulz(int32_t a, int32_t b, int sh)
 {
     int64_t p = (int64_t)a * b;
     return (int32_t)(p >= 0 ? p >> sh : -((-p) >> sh));
 }
 /* One-pole step current += (target - current) * k (k Q15/Q16 by sh), with the increment
  * rounded away from zero but never past the target, so it lands exactly on target. */
-static inline int32_t fx_step(int32_t current, int32_t target, int32_t k, int sh)
+MD_INLINE int32_t fx_step(int32_t current, int32_t target, int32_t k, int sh)
 {
     int64_t d = (int64_t)target - current;
     if (!d) return current;
@@ -26,7 +26,7 @@ static inline int32_t fx_step(int32_t current, int32_t target, int32_t k, int sh
     return (int32_t)(current + (d < 0 ? -s : s));
 }
 /* Symmetric one-pole step toward target; snaps when the step rounds to zero. */
-static inline int32_t fx_smooth(int32_t current, int32_t target, int shift)
+MD_INLINE int32_t fx_smooth(int32_t current, int32_t target, int shift)
 {
     int32_t d = target - current;
     int32_t step = d >= 0 ? d >> shift : -((-d) >> shift);

@@ -29,7 +29,7 @@ then press HOME to select it. Press PLAY to start/stop.
 Rebuild from the sibling fm1-harbor-proc directory:
 
 ```
-PYTHON=/Users/joakimeriksson/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=/Users/joakimeriksson/work/seventies-fm1 ./build.sh --no-package --seqdock --only --modules /Users/joakimeriksson/work/seventies-fm1/audition
+PYTHON=/Users/joakimeriksson/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=/Users/joakimeriksson/work/orrery-fm1 ./build.sh --no-package --seqdock --only --modules /Users/joakimeriksson/work/orrery-fm1/audition
 ```
 
 Copy its `build/seqdock_xip.bin` to this repository's

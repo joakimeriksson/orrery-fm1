@@ -41,6 +41,8 @@ enum {
     MD_CHORD_MAJOR, MD_CHORD_MINOR, MD_CHORD_MAJOR7, MD_CHORD_MINOR7,
     MD_CHORD_SUS2, MD_CHORD_SUS4, MD_CHORD_FIFTH, MD_CHORD_COUNT
 };
+/* a chord step's voicing: tone i (1..3 of the quality's four) an octave up; the root never moves */
+#define MD_CHORD_RAISE(i) ((uint16_t)(1u << (10u + (i))))
 #define MD_PATTERN_HOLD 0xfeu
 #define MD_PATTERN_REST 0xffu
 #define MD_AUTOMATION_UNOWNED 0xffu
@@ -49,7 +51,7 @@ enum {
 /* Logical model fields only: explicit byte encoders follow in M5-01. Never memcpy
  * these runtime structs into project storage, even when sizeof happens to match. */
 typedef struct {
-    uint16_t payload; /* mono: pitch 0..127; chord: pitch | quality<<8; drum: 14-hit mask */
+    uint16_t payload; /* mono: pitch 0..127; chord: pitch | quality<<8 | MD_CHORD_RAISE bits; drum: 14-hit mask */
     uint8_t velocity; /* 1..127 for sounding steps */
     uint8_t gate; /* 0 rest, otherwise 1..200 percent of unswung duration */
     uint8_t flags, probability; /* probability 0..100 */

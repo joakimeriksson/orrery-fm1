@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""A minute of the SEVENTIES module in fm1-emu, recorded: the PULSE setup's band (bass on ROOT PULSE with its pattern,
+"""A minute of the ORRERY module in fm1-emu, recorded: the PULSE setup's band (bass on ROOT PULSE with its pattern,
 the Mini Pops), the strings following the pattern's chords, the lead over it with the echo, and out.
   ./demo.py [FM1_DOCK] [OUT_DIR]     (defaults ../fm1-harbor-proc, ./build/demo) -> OUT_DIR/demo.wav
 FM1_DOCK is an fm1-dock checkout built with the module in its image (README, Build)."""
@@ -41,9 +41,9 @@ def names():
 
 def main():
     mods = names()
-    if "SEVENTIES" not in mods:
-        raise SystemExit(f"demo: SEVENTIES is not in {BIN}: {mods}")
-    press(700, HOME); enc(900, 6, mods.index("SEVENTIES")); press(1100, HOME)   # the module from the list
+    if "ORRERY" not in mods:
+        raise SystemExit(f"demo: ORRERY is not in {BIN}: {mods}")
+    press(700, HOME); enc(900, 6, mods.index("ORRERY")); press(1100, HOME)   # the module from the list
     press(1180, FX, 20); enc(1220, 6, 1)                      # PRESETS one on: PULSE, the second setup
     t0 = 2000
     press(t0, PLAY)                                           # the band: bass, drums and the first chord, together

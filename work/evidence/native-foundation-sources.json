@@ -34,7 +34,7 @@
   "module/module.cfg": "01837c6fb649e8006b3710ebb7303bc2462e15fd68026a3ce24a8385fa1fc6ee",
   "module/seq.c": "3347b55e3366928d86c23da08c9ecc7d264fc89e847c0a5a1d414c3eb47d1908",
   "module/seq.h": "f500a6c2e7bebbd45ececf589108bf8a17a0b5564682012e35c7e5e6a275324c",
-  "module/seventies.c": "977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be",
+  "module/orrery.c": "977fa670afd4e0e4275b67574d74a96fa895dfab9b3d4483fbfffe51ec6cf0be",
   "tests/native/adapters_test.c": "c402c0bf10dd486de72d33d8c6a1dac5015caf8a4c8d64e30ab1953eefbf99e4",
   "tests/native/contracts_test.c": "6ff29e59c12a5fdf25533bc0f7882bcd1c551e8b32517a7843e69baf6ce6a266",
   "tests/native/effect_test.c": "9a9aaa75f870bafdbff2169d21250e34fff29132d7558eada8ee9094d6861832",

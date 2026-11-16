@@ -189,7 +189,7 @@ static void render(void *state,int32_t *out,uint32_t frames)
 {
     md_synthex_state_t *s=state;
     int32_t g=(int32_t)s->level*328;            /* Q15 */
-    memset(s->scratch,0,2u*frames*sizeof s->scratch[0]);
+    md_clear32(s->scratch,2u*frames);
     sc_render(&s->engine,s->scratch,frames);
     /* the outputs AC-coupled, as the instrument's are: a one-pole high-pass near 10 Hz a channel. The engine's
      * ring modulator leaves an offset (the laser harp: 6 % of full scale, 93 % of its energy under 40 Hz) that

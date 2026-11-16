@@ -116,7 +116,7 @@ static void render(void *state,int32_t *out,uint32_t frames)
     int32_t buf[2u*ENS_CTL],g=(int32_t)s->level*328;
     while(frames){
         uint32_t n=frames<ENS_CTL ? frames : ENS_CTL;
-        memset(buf,0,2u*n*sizeof buf[0]);
+        md_clear32(buf,2u*n);
         ens_render(&s->engine,buf,n);
         for(uint32_t i=0;i<2u*n;i++)out[i]+=(buf[i]>>4)*g>>11;
         out+=2u*n;frames-=n;

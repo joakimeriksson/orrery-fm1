@@ -19,7 +19,7 @@ Validation:
   switch at zero-based sample88200/frame88201 (strictly nextbar at120BPM), stop ownership0, repeated
   FX/lead replacement and stop ownership0. STOP retains decaying strings tails.
 - Target command from sibling fm1-harbor-proc:
-  `PYTHON=/Users/joakimeriksson/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=/Users/joakimeriksson/work/seventies-fm1 ./build.sh --no-package --seqdock --only --modules /Users/joakimeriksson/work/seventies-fm1/audition`.
+  `PYTHON=/Users/joakimeriksson/work/fm1-harbor/.venv/bin/python3 HB_MOUNT=/Users/joakimeriksson/work/orrery-fm1 ./build.sh --no-package --seqdock --only --modules /Users/joakimeriksson/work/orrery-fm1/audition`.
   Initial failures: freestanding SDK lacks string.h; local declaration header
   added, implementations remain host hb_lib. SDK C11 atomic loads/stores emitted
   unavailable CAS helper even with acquire/release. Replaced with explicit

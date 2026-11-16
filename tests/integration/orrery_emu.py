@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""M3-04 integration: SEVENTIES on the portable session, in fm1-emu, on fm1-dock's image.
+"""M3-04 integration: ORRERY on the portable session, in fm1-emu, on fm1-dock's image.
 
-    python3 tests/integration/seventies_emu.py [--harbor ../fm1-harbor-proc] [--ms 12000] [--images A_xip.bin,B_xip.bin]
+    python3 tests/integration/orrery_emu.py [--harbor ../fm1-harbor-proc] [--ms 12000] [--images A_xip.bin,B_xip.bin]
 
 Builds nothing: build the image first (CLAUDE.md). For each image (fm1-dock_xip.bin; others by --images) it loads
-SEVENTIES from the picker, presses PLAY, plays a lead key over the band and records the audio. Checks:
+ORRERY from the picker, presses PLAY, plays a lead key over the band and records the audio. Checks:
 the module started on the session; no overruns; worst block under 70 %; the dock's own room is off (no host
 reverb line in the log); the band's hi-hat repeats every eighth at 120 BPM (Rock 1 under ROOT PULSE: the PULSE setup); the
 lead key adds level while held. Writes audio.wav, log.txt and a spectrogram per image under
@@ -81,8 +81,8 @@ def main():
             print(f"  FAIL {image_name}: not built")
             failures.append(image_name)
             continue
-        idx = slot_index(a.harbor, image, "SEVENTIES")
-        # picker -> SEVENTIES (its DRIFT setup); FX opens MIX and PRESETS +1 selects PULSE (the band on ROOT PULSE at
+        idx = slot_index(a.harbor, image, "ORRERY")
+        # picker -> ORRERY (its DRIFT setup); FX opens MIX and PRESETS +1 selects PULSE (the band on ROOT PULSE at
         # 120 with Rock 1); GLO (LEAD page) so the keys play the lead; PLAY at 1.5 s; a lead key held 6.0 .. 8.0 s
         keys = (f"700:8,750:8^,900:e6:{idx},1100:8,1150:8^,1180:2,1200:2^,1220:e6:1,1400:7,1420:7^,"
                 "1500:12,1550:12^,6000:21,8000:21^")
@@ -110,7 +110,7 @@ def main():
             if not ok:
                 failures.append(f"{image_name} {case}")
         subprocess.run(["uv", "run", "--with", "numpy", "--with", "pillow", str(ROOT / "tools" / "spectrogram.py"),
-                        str(out / "audio.wav"), str(out / "spectrogram.png"), f"SEVENTIES on the session ({image_name})"],
+                        str(out / "audio.wav"), str(out / "spectrogram.png"), f"ORRERY on the session ({image_name})"],
                        capture_output=True, cwd=ROOT)
     print("all passed" if not failures else f"FAILED: {', '.join(failures)}")
     return 1 if failures else 0

@@ -15,6 +15,10 @@ typedef struct {
     md_source_id_t source;
     uint8_t used, track, key;
 } md_router_voice_t;
+/* Where the router's calls to an instrument go, when set: the event for the track's instrument (NULL: its reset),
+ * taken as done. The session records them while it routes a block and plays them afterwards, each track's in
+ * order between its render segments (so a second core can play some tracks: the router is done by then). */
+typedef int (*md_router_sink_t)(void *context, uint8_t track, const md_event_t *event);
 typedef struct {
     md_instrument_t *track[MD_TRACKS];
     md_owned_note_t notes[MD_MAX_OWNED_NOTES];
@@ -23,6 +27,8 @@ typedef struct {
     uint64_t order;
     md_note_token_t next_token;
     uint32_t rejected_notes, backend_errors; /* rejected_notes includes transient HIT admission */
+    md_router_sink_t sink;                   /* NULL (init): the instruments are called directly */
+    void *sink_context;
 } md_router_t;
 
 /* NULL track slots are valid unbound destinations. Init rejects aliased engine

@@ -510,7 +510,9 @@ static int alternate_binding(void)
 /* Parallel: a track rendered by a (fake) second core gives exactly the one-core result: the core taking each job
  * (mode 0), declining (1), a one-event queue so most blocks fall back to serial mid-way (2); and (3) a core that
  * is held before its 40th job: identical until then, and after it the track is panicked (no notes left owned)
- * and plays on, on one core. The fake runs the job inside run(), so this proves ordering, not the absence of races. */
+ * and plays on, on one core. Modes 6 and 7: the tracks shared out anew every block by a wandering clock
+ * (parallel_balance), 7 with a one-operation record. The fake runs the job inside run(), so this proves ordering,
+ * not the absence of races. */
 static int fake_mode, fake_runs, fake_fail_at;
 static int fake_run(void (*fn)(uint32_t), uint32_t arg)
 {
@@ -521,6 +523,12 @@ static int fake_run(void (*fn)(uint32_t), uint32_t arg)
     return 1;
 }
 static int fake_wait(void) { return fake_fail_at && fake_runs >= fake_fail_at ? -1 : 0; }
+static uint32_t fake_clock, fake_seed = 1;
+static uint32_t fake_ticks(void)                      /* a counter whose steps wander: the tracks' costs with them */
+{
+    fake_seed = fake_seed * 1664525u + 1013904223u;
+    return fake_clock += 1u + (fake_seed >> 24);
+}
 static md_session_t P;
 static fake_instrument_state_t pfake[MD_TRACKS];
 static md_instrument_t pinst[MD_TRACKS];
@@ -537,15 +545,17 @@ static int parallel_matches_serial(void)
     }
     bank.locks[0] = (md_lock_t){.step = (2u * 4u) * 64u + 3u, .target = FAKE_PARAM_GAIN, .value = 99};
     bank.lock_count = 1;
-    for (fake_mode = 0; fake_mode < 6; fake_mode++) {   /* 4, 5: tracks 1 and 2 on core 1 (5 with a one-event queue) */
+    for (fake_mode = 0; fake_mode < 8; fake_mode++) {   /* 4, 5: tracks 1 and 2 on core 1 (5 with a one-event queue) */
+        uint32_t masks_seen = 0;
         fake_runs = 0;
         fake_fail_at = fake_mode == 3 ? 40 : 0;
         uint32_t failed_at = 0xffffffffu;
         uint32_t after_ons = 0;
         CHECK(!setup(&bank));
-        md_session_config_t c = {.bank = &bank, .bpm_q8 = 120u * 256u, .parallel = {fake_run, fake_wait}, .parallel_track = 2,
-                                 .parallel_queue = fake_mode == 2 || fake_mode == 5 ? 1u : 0u,
+        md_session_config_t c = {.bank = &bank, .bpm_q8 = 120u * 256u, .parallel = {fake_run, fake_wait, 0}, .parallel_track = 2,
+                                 .parallel_queue = fake_mode == 2 || fake_mode == 5 || fake_mode == 7 ? 1u : 0u,
                                  .parallel_mask = (uint8_t)(fake_mode >= 4 ? (1u << 1) | (1u << 2) : 0u)};
+        if (fake_mode >= 6) { c.parallel.ticks = fake_ticks; c.parallel_balance = 1; }
         for (uint32_t t = 0; t < 4; t++) {
             CHECK(md_instrument_init(&pinst[t], &FAKE_INSTRUMENT, &pfake[t], sizeof pfake[t], MD_SAMPLE_RATE) == MD_OK);
             c.instrument[t] = &pinst[t];
@@ -569,6 +579,7 @@ static int parallel_matches_serial(void)
             for (uint32_t t = 0; t < MD_TRACKS; t++) { fake_trace_clear(&fake[t]); fake_trace_clear(&pfake[t]); }
             memset(out, 0, sizeof out); memset(pout, 0, sizeof pout);
             CHECK(md_session_render(&S, out, frames) == MD_OK && md_session_render(&P, pout, frames) == MD_OK);
+            masks_seen |= 1u << P.par_now;
             if (failed_at == 0xffffffffu) {
                 md_session_snapshot_t now;
                 CHECK(md_session_snapshot(&P, &now) == MD_OK);
@@ -591,8 +602,66 @@ static int parallel_matches_serial(void)
         if (fake_mode == 3) CHECK(snap.parallel_failed && snap.parallel_blocks == 39u);
         if (fake_mode == 4) CHECK(snap.parallel_blocks > 300 && !snap.parallel_failed);
         if (fake_mode == 5) CHECK(snap.parallel_fallbacks >= 10u && !snap.parallel_failed);
+        if (fake_mode >= 6) {                           /* the tracks moved between the cores, and nothing was heard of it */
+            uint32_t kinds = 0;
+            for (uint32_t m = 0; m < 32u; m++) kinds += masks_seen >> m & 1u;
+            printf("  mode %d: %u different shares of the tracks\n", fake_mode, kinds);
+            CHECK(kinds >= 3u && snap.parallel_blocks > 300 && !snap.parallel_failed);
+        }
         CHECK(snap.event_errors == 0 && snap.events > 100);
     }
+    return 0;
+}
+
+/* Routed first, played afterwards: an instrument that refuses a played event can no longer tell the router, which
+ * took it as done. The event is counted, and at the next block's start the track is panicked as the router does
+ * with a backend fault (its notes gone from the books, the instrument reset); then it plays on. */
+static int played_refusal_panics_the_track(void)
+{
+    empty_bank(&bank);
+    for (uint32_t k = 0; k < 16; k++) {
+        note(&bank, 0, 0, k, (uint16_t)(40 + k), 40);
+        note(&bank, 2, 0, k, (uint16_t)(60 + k), 160);
+    }
+    fake_mode = 0; fake_runs = 0; fake_fail_at = 0;
+    md_session_config_t c = {.bank = &bank, .bpm_q8 = 120u * 256u, .parallel = {fake_run, fake_wait, 0}, .parallel_track = 2};
+    for (uint32_t t = 0; t < 4; t++) {
+        CHECK(md_instrument_init(&pinst[t], &FAKE_INSTRUMENT, &pfake[t], sizeof pfake[t], MD_SAMPLE_RATE) == MD_OK);
+        c.instrument[t] = &pinst[t];
+    }
+    CHECK(md_session_init(&P, &c) == MD_OK);
+    md_command_t go = {.kind = MD_CMD_START};
+    CHECK(md_session_submit(&P, &go) == MD_OK);
+    md_session_snapshot_t snap;
+    uint32_t block = 0, resets = pfake[2].reset_calls, ons = 0;
+    for (; block < 200 && !pfake[2].voice_count; block++) {          /* until the parallel track holds a note */
+        fake_trace_clear(&pfake[2]);
+        CHECK(md_session_render(&P, pout, 128) == MD_OK);
+    }
+    CHECK(pfake[2].voice_count == 1);
+    CHECK(md_session_snapshot(&P, &snap) == MD_OK && !snap.event_errors && !snap.backend_errors);
+    pfake[2].trace_count = FAKE_TRACE_CAPACITY;                      /* the fake refuses its next event */
+    for (; block < 400; block++) {
+        CHECK(md_session_render(&P, pout, 128) == MD_OK);
+        CHECK(md_session_snapshot(&P, &snap) == MD_OK);
+        if (snap.event_errors) break;
+    }
+    uint32_t refused = snap.event_errors;                            /* (an off and the next on can share a block) */
+    CHECK(refused >= 1u && !snap.backend_errors && pfake[2].reset_calls == resets);   /* counted; not yet panicked */
+    fake_trace_clear(&pfake[2]);
+    CHECK(md_session_render(&P, pout, 1) == MD_OK);                  /* the next block's start: the track panicked */
+    CHECK(md_session_snapshot(&P, &snap) == MD_OK && snap.backend_errors == 1 && pfake[2].reset_calls == resets + 1u);
+    for (uint32_t n = 0; n < MD_MAX_OWNED_NOTES; n++) CHECK(!(P.router.notes[n].used && P.router.notes[n].track == 2));
+    CHECK(pfake[0].reset_calls == 0 || pfake[0].voice_count <= 1);   /* (the other track untouched) */
+    for (uint32_t k = 0; k < 400; k++) {                             /* and it plays on */
+        fake_trace_clear(&pfake[2]);
+        CHECK(md_session_render(&P, pout, 128) == MD_OK);
+        for (uint32_t i = 0; i < pfake[2].trace_count; i++) ons += pfake[2].trace[i].event.kind == MD_EVENT_NOTE_ON;
+    }
+    CHECK(md_session_snapshot(&P, &snap) == MD_OK);
+    printf("  refused %u when played, then %u more; %u backend faults; %u note-ons after\n", refused, snap.event_errors - refused,
+           snap.backend_errors, ons);
+    CHECK(ons > 5u && snap.event_errors == refused && snap.backend_errors == 1);
     return 0;
 }
 
@@ -634,6 +703,7 @@ int main(void)
     RUN(threaded_handoff);
     RUN(alternate_binding);
     RUN(parallel_matches_serial);
+    RUN(played_refusal_panics_the_track);
     RUN(guards);
     return 0;
 }

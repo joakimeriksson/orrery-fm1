@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* M3-05 stress builds of SEVENTIES: the real module (module/seventies.c, included below) with a stress case set up
+/* M3-05 stress builds of ORRERY: the real module (module/orrery.c, included below) with a stress case set up
  * through its MD_STRESS_HOOK. Each tests/stress/<variant>/stress.c defines STRESS_VARIANT and includes this file.
  *
  *   1  the dense band: C MIN PULSE at 138 BPM (sixteenths) with 48 cutoff locks on the bass, four Mini Pops rhythms
@@ -76,7 +76,7 @@ static void stress_hook(int phase, md_session_config_t *c);
 static int stress_session_render(md_session_t *, int32_t *, uint32_t);
 #define md_session_render stress_session_render   /* the module's render() calls the timed one */
 #endif
-#include "../../module/seventies.c"
+#include "../../module/orrery.c"
 #if STRESS_VARIANT == 5 || STRESS_VARIANT == 7
 #undef md_session_render
 static uint32_t prof_total_sum, prof_total_max, prof_total_n;

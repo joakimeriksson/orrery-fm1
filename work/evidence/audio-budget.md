@@ -8,7 +8,7 @@ figures, and the emulator's cycle model is the only target timing available here
 
     python3 tests/stress/run_stress.py [variants]      # builds each variant, plays it, prints worst/last/overruns
 
-`tests/stress/stress_common.h` builds the real module (module/seventies.c is compiled into the variant) with a
+`tests/stress/stress_common.h` builds the real module (module/orrery.c is compiled into the variant) with a
 stress case set up through its `MD_STRESS_HOOK` (compiled only there). Variants 5 and 7 add timing proxies on every
 instrument render and bus, plus `MD_SESSION_PROFILE` stage timers in core/session.c; they call the host's tick
 counter inside render, which production code does not, and exist only to attribute cost.
@@ -23,9 +23,9 @@ Every figure is the worst block over the run; the budget is 70 %. All builds use
 | Supported case for ten minutes, then stop (variant 4) | 68.2 % | yes |
 | Supported case with the electronic FX replacing the lead (variant 8) | 58.7 % | yes |
 | Supported case with the master sweep filter active (variant 10) | 66.5 % | yes |
-| The shipped demo with a lead note (tests/integration/seventies_emu.py, both images) | 63.6 % | yes |
+| The shipped demo with a lead note (tests/integration/orrery_emu.py, both images) | 63.6 % | yes |
 
-The supported set is: the four instruments as SEVENTIES binds them (or the electronic FX in place of one part),
+The supported set is: the four instruments as ORRERY binds them (or the electronic FX in place of one part),
 four string voices (the chord patterns), one rhythm key without the extra rhythms, the echo and reverb buses, and
 the master filter. Inserts and denser drums are not in it:
 
@@ -166,7 +166,7 @@ mixer's clamp comment states the over-limit change.
 | --- | --- |
 | tests/stress/stress_common.h | c77648aa5d942064901811737a686003f82ce9e372ef999c0b2e68719827611f |
 | tests/stress/run_stress.py | 69a8ea1a639f157fbbfe60b7bcf97348f85bf60a9cd043019b984c3b46ea55e3 |
-| module/seventies.c | 89f0fb98c9550679dfc90f773152e4ffb4de840d30e6597611da0bd4dba0e521 |
+| module/orrery.c | 89f0fb98c9550679dfc90f773152e4ffb4de840d30e6597611da0bd4dba0e521 |
 | module/module.cfg | 02a002dc57a23f93a876a30e25530bc4f8e0a7a425fbf5b11156d2294f7642c4 |
 | core/mixer.c | ece51942b8c807a18659c29aaddbb4eb915582987e77e54f4ec809ee5cb35fd0 |
 | core/session.c | 46b6f5a67c00e800973fb43c6132313ce6392b112ef81d2cb7f5f929d1e49f68 |
@@ -198,7 +198,7 @@ Both ten-minute runs ended with AC RMS 0.45 in the last 3 s (no stuck notes) and
 The emulator logs core 1's job: worst 29.1 % of a block in AMBIENT with lead notes. The second-core path is
 emulator evidence only, not tested on hardware.
 
-Production images (CRC 334fb18d) measured in tests/integration/seventies_emu.py: BAND 60.4 % on both images.
+Production images (CRC 334fb18d) measured in tests/integration/orrery_emu.py: BAND 60.4 % on both images.
 AMBIENT with lead notes measured 59.3 %.
 
 The residual over-budget reachable case reported above (variant 15) is now within budget, provided core 1 is

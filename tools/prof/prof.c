@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-/* A timing build of SEVENTIES (not shipped): every part's render and both buses timed by the host's 24 MHz ticks,
+/* A timing build of ORRERY (not shipped): every part's render and both buses timed by the host's 24 MHz ticks,
  * a report to the log every five seconds while the band runs, in permille of a block (256 frames). */
 #include "core/session.h"
 static void prof_hook(int phase, md_session_config_t *c);
 #define MD_STRESS_HOOK prof_hook
 static int prof_session_render(md_session_t *, int32_t *, uint32_t);
 #define md_session_render prof_session_render
-#include "../../module/seventies.c"
+#include "../../module/orrery.c"
 #undef md_session_render
 #define BLOCK 139320u
 enum { P_BASS, P_LEAD, P_STRINGS, P_DRUMS, P_BOX, P_ECHO, P_REVERB, P_PARTS };
@@ -60,7 +60,9 @@ static void prof_hook(int phase, md_session_config_t *c)
     p = put_s(line, "P "); p = put_s(p, SETUP_NAME); p = pair(p, " tot ", tot_sum, tot_max);
     p = pair(p, " ev ", md_session_prof[MD_PROF_EVENTS][0], md_session_prof[MD_PROF_EVENTS][1]);
     p = pair(p, " mix ", md_session_prof[MD_PROF_MIX][0], md_session_prof[MD_PROF_MIX][1]);
-    p = pair(p, " drain ", md_session_prof[MD_PROF_DRAIN][0], md_session_prof[MD_PROF_DRAIN][1]);
+    p = pair(p, " dr ", md_session_prof[MD_PROF_DRAIN][0], md_session_prof[MD_PROF_DRAIN][1]);
+    p = pair(p, " rt ", md_session_prof[MD_PROF_ROUTE][0], md_session_prof[MD_PROF_ROUTE][1]);
+    p = pair(p, " cl ", md_session_prof[MD_PROF_CLEAR][0] + md_session_prof[MD_PROF_PUBLISH][0], md_session_prof[MD_PROF_CLEAR][1] + md_session_prof[MD_PROF_PUBLISH][1]);
     p = put_s(p, " par "); p = put_u(p, S.stats.parallel_blocks - pb); p = put_s(p, " ");
     p = put_u(p, S.stats.parallel_inline - pi); p = put_s(p, " "); put_u(p, S.stats.parallel_fallbacks - pf);
     H->log(line);

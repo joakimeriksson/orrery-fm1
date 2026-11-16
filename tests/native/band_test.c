@@ -407,11 +407,56 @@ static int ambient_combinations(void)
     CHECK(!bank.pattern[MD_BAND_FX][0].step[0].gate && !bank.pattern[MD_BAND_FX][0].step[12].gate && bank.pattern[MD_BAND_FX][0].step[4].gate);
     return 0;
 }
+/* AMBIENT's chords are voiced in one octave over the lowest root (F3 .. E4 at octave 1), so the tones two chords
+ * share stay where they are; a bare fifth is left as it is; the lead's phrases play the chord's tones only */
+static int voicings_and_phrases(void)
+{
+    static const uint8_t TONES[MD_BAND_CHORD_KINDS][4] = {{0}, {0, 3, 7, 12}, {0, 4, 7, 12}, {0, 3, 7, 10}, {0, 4, 7, 11}, {0, 2, 7, 12},
+                                                         {0, 5, 7, 12}, {0, 7, 12, 19}};
+    md_band_settings_t set = {.scene = MD_BAND_SCENE_AMBIENT, .chord_octave = 1};
+    for (uint32_t k = 0; k < 8; k++) set.chord[k] = AMB_DRIFT[k];
+    set.chord[6] = (md_band_chord_t){9, MD_BAND_CHORD_5TH};
+    CHECK(md_band_build(&set, &bank, &chain, &report) == MD_OK);
+    uint32_t held = 0;
+    for (uint32_t i = 0; i < 8; i++) {
+        uint16_t v = bank.pattern[MD_BAND_CHORDS][i / 4u].step[(i % 4u) * 2u].payload;
+        uint32_t root = v & 0xffu, now = 0;
+        for (uint32_t t = 1; t < 4u; t++) {
+            uint32_t key = root + TONES[set.chord[i].kind][t] + (v & MD_CHORD_RAISE(t) ? 12u : 0u);
+            if (set.chord[i].kind != MD_BAND_CHORD_5TH) { CHECK(key >= 53u && key < 65u); now |= 1u << (key - 53u); }
+            else CHECK(!(v & MD_CHORD_RAISE(t)));
+        }
+        if (i == 1) CHECK((now & held) == ((1u << (55 - 53)) | (1u << (60 - 53)) | (1u << (63 - 53))));   /* Cm -> Abmaj7: G3 C4 Eb4 stay */
+        held = now;
+    }
+    CHECK((bank.pattern[MD_BAND_CHORDS][0].step[0].payload & (MD_CHORD_RAISE(1) | MD_CHORD_RAISE(2) | MD_CHORD_RAISE(3))) == MD_CHORD_RAISE(1));
+    for (uint32_t style = 0; style <= MD_BAND_PHRASES; style++) {
+        uint32_t notes = 0, rests = 0;
+        set.phrase = (uint8_t)style;
+        CHECK(md_band_build(&set, &bank, &chain, &report) == MD_OK);
+        for (uint32_t p = 0; p < 2u; p++)
+            for (uint32_t k = 0; k < 64u; k++) {
+                const md_step_t *t = &bank.pattern[MD_BAND_LEAD][p].step[k];
+                const md_band_chord_t *c = &set.chord[p * 4u + k / 16u];
+                uint32_t pc, ok = 0;
+                if (!t->gate) { rests += k / 16u == 1u; continue; }
+                notes++;
+                pc = (t->payload + 120u - c->root) % 12u;
+                for (uint32_t i = 0; i < 4u; i++) ok |= TONES[c->kind][i] % 12u == pc;
+                CHECK(ok && t->payload >= 53u && t->payload <= 108u);
+            }
+        CHECK(style ? notes > 12u : !notes);
+        if (style == 4u) CHECK(rests == 32u);        /* CALLS: the second chord of each half is quiet */
+        printf("  phrase %u: %u steps sound\n", style, notes);
+    }
+    return 0;
+}
 int main(void)
 {
     RUN(chain_and_settings);
     RUN(ambient_combinations);
     RUN(ambient_chords);
+    RUN(voicings_and_phrases);
     RUN(bass_and_chords);
     RUN(drums);
     return 0;

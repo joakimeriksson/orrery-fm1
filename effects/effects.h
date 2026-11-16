@@ -62,17 +62,29 @@ typedef struct {
     int16_t line[MD_ECHO_LEN];
 } md_fx_echo_t;
 
-/* Reverb, after fm1-harbor's firmware/src/hb_fx.c (itself Scintilla's at half the
- * lines): four lines in a Hadamard loop, the same decay, damping and level laws. */
+/* Reverb: four lines in a Hadamard loop (the decay and level laws of fm1-harbor's firmware/src/hb_fx.c, itself
+ * Scintilla's at half the lines), run at half the sample rate so the same memory holds twice the time (268 ms of
+ * line: twice the resonances a hertz), two of the taps moved slowly (a hall's tail drifts instead of ringing on fixed
+ * pitches), the input through two allpasses a channel (a struck sound arrives as a cluster, not as slaps) and a
+ * lowpass inside the loop (the top of the tail dies first). */
 enum { MD_REVERB_ALGORITHM = 1, MD_REVERB_SIZE, MD_REVERB_DAMPING };
 enum { MD_REVERB_ROOM, MD_REVERB_PLATE, MD_REVERB_HALL, MD_REVERB_CATHEDRAL };
 #define MD_REVERB_LINES 4u
 #define MD_REVERB_LEN 2048u
+#define MD_REVERB_AP 256u                /* an input allpass's line (two a channel) */
+#define MD_REVERB_SPAN 256u              /* frames a pass (a longer call is taken in pieces) */
 typedef struct {
     int32_t algorithm, size, damping;
-    int32_t g[MD_REVERB_LINES], a, wet;  /* Q30 line gains, Q16 lowpass and level */
+    int32_t g[MD_REVERB_LINES], a, wet;  /* Q30 line gains, Q16 output lowpass and level */
+    int32_t loop;                        /* the lowpass in the loop, thirty-seconds */
     int32_t lpl, lpr;
-    uint32_t w;
+    int32_t lp[MD_REVERB_LINES];         /* the loop's lowpasses */
+    int32_t hold_l, hold_r;              /* the frame waiting for its pair */
+    int32_t prev_l, prev_r, cur_l, cur_r;   /* the last two half-rate outputs */
+    uint32_t w, odd, lfo1, lfo2;
+    uint16_t at[4];                      /* the allpasses' places */
+    int32_t tick[2][MD_REVERB_SPAN / 2u + 1u];   /* a span's half-rate frames: in, then out */
+    int16_t ap[4][MD_REVERB_AP];
     int16_t line[MD_REVERB_LEN * MD_REVERB_LINES];
 } md_fx_reverb_t;
 

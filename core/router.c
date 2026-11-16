@@ -10,11 +10,12 @@ static void flush_track(md_router_t *r, uint8_t track)
         if (r->voices[i].used && r->voices[i].track==track) r->voices[i]=(md_router_voice_t){0};
     }
     for (uint32_t i=0;i<MD_MAX_SOURCES;i++) r->sustain[track][i]=0;
-    md_instrument_reset(r->track[track]);
+    if (r->sink) (void)r->sink(r->sink_context,track,NULL);
+    else md_instrument_reset(r->track[track]);
 }
 static int dispatch(md_router_t *r, uint8_t track, const md_event_t *e)
 {
-    int status=md_instrument_event(r->track[track],e);
+    int status=r->sink ? r->sink(r->sink_context,track,e) : md_instrument_event(r->track[track],e);
     if (status==MD_OK) return MD_OK;
     /* A hybrid instrument may have every physical slot occupied by held
      * pitches. Its transient HIT admission can fail without a processor fault;

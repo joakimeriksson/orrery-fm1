@@ -2,6 +2,7 @@
 #ifndef MD_PARAM_H
 #define MD_PARAM_H
 #include <stdint.h>
+#include "hot.h"
 
 #define MD_API_VERSION 2u /* source contract: current parameter readback added */
 #define MD_SAMPLE_RATE 44100u

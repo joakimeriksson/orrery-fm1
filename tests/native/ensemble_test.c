@@ -70,7 +70,7 @@ static int pads_play(void)
 {
     CHECK(md_instrument_init(&em, &MD_EMINENT, &em_state, sizeof em_state, MD_SAMPLE_RATE) == MD_OK);
     md_event_t lv = {.kind = MD_EVENT_PARAM, .source = MD_SOURCE_NONE};
-    lv.data.param.id = MD_EMINENT_LEVEL; lv.data.param.value = 65;            /* as SEVENTIES plays it */
+    lv.data.param.id = MD_EMINENT_LEVEL; lv.data.param.value = 65;            /* as ORRERY plays it */
     CHECK(md_instrument_event(&em, &lv) == MD_OK);
     int32_t peak = 0; double corr;
     chord(&em, 1);

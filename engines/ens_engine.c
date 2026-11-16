@@ -9,7 +9,7 @@
 #define ENS_MID_Q16 (ENS_WET_Q16 >> 1)          /* stereo: the mean of both channels' three taps */
 #define ENS_VOICE_FS 24000                      /* Felucca's per-voice level */
 #define ENS_OUT(x) (((x) * 5) >> 5)             /* the out: -16 dB, Caravel's track and master stages, so a pad sits where
-                                                 * SEVENTIES' Eminent does (tests/native/ensemble_test.c) */
+                                                 * ORRERY' Eminent does (tests/native/ensemble_test.c) */
 static const int32_t ENS_BASE[ENS_NT] = {265, 375, 485, 300, 445, 560};   /* 6.0 8.5 11.0 ms; 6.8 10.1 12.7 ms */
 
 /* ---- Felucca-Engines' DSP blocks (src/dsp.c, MIT) */
@@ -41,7 +41,7 @@ static inline int32_t blep(uint32_t ph, uint32_t inc)   /* polyBLEP residual (Q1
     return 0;
 }
 static inline int32_t osc_saw(uint32_t ph, uint32_t inc) { return ((int32_t)(ph >> 16) - 32768) - blep(ph, inc); }
-static inline int32_t osc_pulse(uint32_t ph, uint32_t inc, uint32_t pw) { return (osc_saw(ph, inc) - osc_saw(ph + pw, inc)) >> 1; }
+/* (Felucca's osc_pulse is (osc_saw(ph, inc) - osc_saw(ph + pw, inc)) >> 1: ens_voice makes it of two saw runs) */
 static inline int32_t osc_tri(uint32_t ph)
 {
     int32_t s = (int32_t)(ph >> 15);
@@ -173,6 +173,28 @@ void ens_note_off(ens_t *e, uint8_t key)
         if (e->v[i].gate && e->v[i].key == key) { e->v[i].gate = 0; e->v[i].stage = 3; }
 }
 
+/* n samples of osc_saw from ph, a step inc a sample: into a (SAW_SET), off a (SAW_SUB), into a and times g into
+ * x (SAW_BOTH), or times g onto x (SAW_ADD). Between two wraps the saw is a line with no residual, so the samples
+ * go in runs: how many until the wrap comes within a step is one division, and only the two at the wrap take the
+ * residual. The same numbers as n calls. */
+enum { SAW_SET, SAW_SUB, SAW_BOTH, SAW_ADD };
+static inline __attribute__((always_inline)) void saws(int32_t *a, int32_t *x, uint32_t n, uint32_t ph, uint32_t inc,
+                                                       int32_t g, int kind)
+{
+    uint32_t i = 0, run;
+#define SAW_PUT(S) do { int32_t s_ = (S); \
+        if (kind == SAW_SET) a[i] = s_; else if (kind == SAW_SUB) a[i] -= s_; \
+        else if (kind == SAW_BOTH) { a[i] = s_; x[i] = s_ * g; } else x[i] += s_ * g; } while (0)
+    while (i < n) {
+        if (!(inc >> 15)) run = n - i;                                  /* (blep gives nothing at such a step) */
+        else if (ph >= inc && ph <= 0xFFFFFFFFu - inc) run = (0xFFFFFFFFu - inc - ph) / inc + 1u;
+        else { SAW_PUT(osc_saw(ph, inc)); ph += inc; i++; continue; }
+        if (run > n - i) run = n - i;
+        for (; run; run--, i++, ph += inc) SAW_PUT((int32_t)(ph >> 16) - 32768);
+    }
+#undef SAW_PUT
+}
+
 /* one control tick of the ADSR (Caravel's env_tick); Q15 */
 static int32_t env_tick(const ens_t *e, ens_voice_t *v)
 {
@@ -210,6 +232,7 @@ static void ens_voice(const ens_t *e, ens_voice_t *v, int32_t *out, uint32_t n, 
     uint32_t ph0 = v->ph[0], ph1 = v->ph[1], ph2 = v->ph[2], i;
     uint32_t pw = (uint32_t)(64 * 256) << 17;    /* the shape at rest (no LFO, no ENV > SHAPE) */
     uint32_t inc0, inc1, inc2;
+    int32_t x[ENS_CTL], sa[ENS_CTL];            /* the oscillators' sum; the 8' saw alone */
     tsvf_t f;
     wS = clamp(wS, 0, 32767); wD = clamp(wD, 0, 32767); wC = clamp(wC, 0, 32767);
     if (++v->s[3] >= 1024) {                    /* a new drift target about every 0.7 s, then a one-pole glide to it */
@@ -232,24 +255,40 @@ static void ens_voice(const ens_t *e, ens_voice_t *v, int32_t *out, uint32_t n, 
     knee = 16000 - tex * 60;
     rough = mulq15(wD, 8192 + tex * 160);
     breath = mulq15(wC, 2200 + tex * 12);
-    for (i = 0; i < n; i++) {
-        int32_t a = osc_saw(ph0, inc0), b = osc_saw(ph0 << 1, inc0 << 1), c = osc_tri(ph2);
-        int32_t x = (a * g8 + b * g4 + c * g16) >> 15, v3, bp, lp, y;
-        if (rough)                              /* (64 bits: a saw at its wrap and the pulse reach 2 x full scale, which
+    /* In passes, each with a few values in registers (Caravel's one loop over everything was 250 instructions a
+     * sample here, a quarter of them the stack): the oscillators one at a time into x, in runs between a saw's
+     * steps; then the filter. The same numbers. */
+    saws(sa, x, n, ph0, inc0, g8, SAW_BOTH);                            /* the 8' saw, kept for the pulse's product */
+    if (g4) saws(0, x, n, ph0 << 1, inc0 << 1, g4, SAW_ADD);              /* the 4' */
+    if (g16) { uint32_t ph = ph2; for (i = 0; i < n; i++, ph += inc2) x[i] += osc_tri(ph) * g16; }
+    for (i = 0; i < n; i++) x[i] >>= 15;
+    if (rough) {                                /* (64 bits: a saw at its wrap and the pulse reach 2 x full scale, which
                                                  * Caravel's 32-bit product wraps into a click) */
-            x += mulq15((int32_t)(((int64_t)a * osc_pulse(ph1, inc1, pw)) >> 15), rough);
-        if (breath) x += (((int32_t)(noise32(&v->s[2]) >> 17) - 16384) * breath) >> 15;
-        v3 = x - ic2;
-        bp = (f.a1 * ic1 + f.a2 * v3) >> 13;
-        lp = ic2 + ((f.a2 * ic1 + f.a3 * v3) >> 13);
-        ic1 = clamp(2 * bp - ic1, -150000, 150000);
-        ic2 = clamp(2 * lp - ic2, -150000, 150000);
-        y = (int32_t)(((int64_t)lp * gl + (int64_t)((bp * k) >> 12) * gb) >> 15);   /* (64 bits: lp reaches 150000, gl
-                                                 * 32930 at the dark end, where Caravel's 32-bit products wrap) */
-        amp += astep;
-        out[i] += mulq15(mulq15(soft_knee(y, knee) * 2, amp), ENS_VOICE_FS) * 2;
-        ph0 += inc0; ph1 += inc1; ph2 += inc2;
+        int32_t pu[ENS_CTL];
+        saws(pu, 0, n, ph1, inc1, 0, SAW_SET);
+        saws(pu, 0, n, ph1 + pw, inc1, 0, SAW_SUB);
+        for (i = 0; i < n; i++) x[i] += mulq15((int32_t)(((int64_t)sa[i] * (pu[i] >> 1)) >> 15), rough);
     }
+    if (breath) {
+        int32_t seed = v->s[2];
+        for (i = 0; i < n; i++) x[i] += (((int32_t)(noise32(&seed) >> 17) - 16384) * breath) >> 15;
+        v->s[2] = seed;
+    }
+    {
+        const int32_t a1 = f.a1, a2 = f.a2, a3 = f.a3;
+        for (i = 0; i < n; i++) {
+            int32_t v3 = x[i] - ic2, bp, lp, y;
+            bp = (a1 * ic1 + a2 * v3) >> 13;
+            lp = ic2 + ((a2 * ic1 + a3 * v3) >> 13);
+            ic1 = clamp(2 * bp - ic1, -150000, 150000);
+            ic2 = clamp(2 * lp - ic2, -150000, 150000);
+            y = (int32_t)(((int64_t)lp * gl + (int64_t)((bp * k) >> 12) * gb) >> 15);   /* (64 bits: lp reaches 150000, gl
+                                                 * 32930 at the dark end, where Caravel's 32-bit products wrap) */
+            amp += astep;
+            out[i] += mulq15(mulq15(soft_knee(y, knee) * 2, amp), ENS_VOICE_FS) * 2;
+        }
+    }
+    ph0 += inc0 * n; ph1 += inc1 * n; ph2 += inc2 * n;
     v->ph[0] = ph0; v->ph[1] = ph1; v->ph[2] = ph2;
     v->s[0] = ic1; v->s[1] = ic2;
 }
@@ -278,30 +317,36 @@ static void ens_post(ens_t *s, int32_t *b, uint32_t n, int32_t *sd)
         s->live = 1;
     }
     for (j = 0; j < ENS_NT; j++) step[j] = (tgt[j] - s->delay[j]) / (int32_t)n;
-    for (i = 0; i < n; i++) {
-        int32_t dry = b[i], sum = 0;
-        s->ring[s->w] = dry;
-        for (j = 0; j < 3u; j++) {
-            int32_t d = s->delay[j] + step[j] * (int32_t)(i + 1u);
-            uint32_t di = (uint32_t)d >> 8, idx0 = (s->w - di) & (ENS_RING - 1u), idx1 = (idx0 - 1u) & (ENS_RING - 1u);
-            int32_t r0 = s->ring[idx0], r1 = s->ring[idx1];
-            sum += r0 + (((r1 - r0) * (d & 255)) >> 8);
-        }
-        if (sd) {
-            int32_t sumr = 0;
-            for (j = 3; j < ENS_NT; j++) {
-                int32_t d = s->delay[j] + step[j] * (int32_t)(i + 1u);
-                uint32_t di = (uint32_t)d >> 8, idx0 = (s->w - di) & (ENS_RING - 1u), idx1 = (idx0 - 1u) & (ENS_RING - 1u);
-                int32_t r0 = s->ring[idx0], r1 = s->ring[idx1];
-                sumr += r0 + (((r1 - r0) * (d & 255)) >> 8);
+    {   /* The block into the ring first, then a pass a tap (one loop over six taps was 212 instructions a sample,
+         * with a product for each tap's place). A tap reads at most 688 samples behind its own, and the block is
+         * ENS_CTL long: nothing it wants is overwritten yet. The same numbers. */
+        int32_t suml[ENS_CTL], sumr[ENS_CTL];
+        const uint32_t w0 = s->w, taps = sd ? ENS_NT : 3u;
+        int32_t *const ring = s->ring;
+        for (i = 0; i < n; i++) { ring[(w0 + i) & (ENS_RING - 1u)] = b[i]; suml[i] = 0; sumr[i] = 0; }
+        for (j = 0; j < taps; j++) {
+            int32_t d = s->delay[j], st = step[j], *sum = j < 3u ? suml : sumr;
+            for (i = 0; i < n; i++) {
+                uint32_t idx0, idx1;
+                int32_t r0, r1;
+                d += st;
+                idx0 = (w0 + i - ((uint32_t)d >> 8)) & (ENS_RING - 1u); idx1 = (idx0 - 1u) & (ENS_RING - 1u);
+                r0 = ring[idx0]; r1 = ring[idx1];
+                sum[i] += r0 + (((r1 - r0) * (d & 255)) >> 8);
             }
-            s->w = (s->w + 1u) & (ENS_RING - 1u);
-            b[i] = dry + mulq16(mulq16(sum + sumr, ENS_MID_Q16) - dry, (uint32_t)mix);
-            sd[i] = mulq16(mulq16(sum - sumr, ENS_WET_Q16), (uint32_t)mix);
-            continue;
         }
-        s->w = (s->w + 1u) & (ENS_RING - 1u);
-        b[i] = dry + mulq16(mulq16(sum, ENS_WET_Q16) - dry, (uint32_t)mix);
+        s->w = (w0 + n) & (ENS_RING - 1u);
+        if (sd)
+            for (i = 0; i < n; i++) {
+                int32_t dry = b[i];
+                b[i] = dry + mulq16(mulq16(suml[i] + sumr[i], ENS_MID_Q16) - dry, (uint32_t)mix);
+                sd[i] = mulq16(mulq16(suml[i] - sumr[i], ENS_WET_Q16), (uint32_t)mix);
+            }
+        else
+            for (i = 0; i < n; i++) {
+                int32_t dry = b[i];
+                b[i] = dry + mulq16(mulq16(suml[i], ENS_WET_Q16) - dry, (uint32_t)mix);
+            }
     }
     for (j = 0; j < ENS_NT; j++) s->delay[j] += step[j] * (int32_t)n;
 }
