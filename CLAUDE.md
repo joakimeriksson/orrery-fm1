@@ -17,7 +17,10 @@ WORK.json is live progress (`python3 tools/work.py status`), and work/agents/ ho
   then `./take.py` to copy it here. Do not fork them silently. `engines/hb_echo.c` is the seqdock host's echo
   that `effects/echo.c` was ported from (the module plays the port); it and the rest of the seqdock work are on
   fm1-harbor's `proc-snapshot` branch, not on main.
-- `module/setups.h` — the factory setups (seventeen) and the effect patterns, one named-field block each: edit style
+- `instruments/harmonic.c` — the HARMONIC voice (two generators of sixteen harmonics: the RMI Harmonic Synthesizer's
+  principle), the lead's third instrument after the 2600 and the Synthex. It is written here, not copied from
+  fm1-harbor; its waves are `instruments/harmonic_tables.h`, drawn by `tools/gen_harmonic_tables.py`.
+- `module/setups.h` — the factory setups (eighteen) and the effect patterns, one named-field block each: edit style
   sets there. `tools/listen.py` (`uv run --with numpy --with pillow tools/listen.py [SETUP ...] [--png]`) renders the
   module itself natively (`tools/render_setups.c`, a second a setup) and prints each part's level, pitch classes and
   the mix's bands: balance and check keys with it before the emulator. Changing `set_t`'s layout needs new

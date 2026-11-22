@@ -9,6 +9,7 @@
  * alone (the others muted with the SMK-37's mute pads). SCRIPT: "ms:event,..." before PLAY at 500 ms and after:
  * bN / bN^ a button down / up, eN:clicks an encoder, kN / kN^ a note key, mHHHHHH a MIDI message (hex). Without one
  * the setup just plays. Prints the peak and the RMS; the screen's text goes to stderr with -v as the last argument.
+ * ORRERY_BANK=file gives the module that file as its saved setups, ORRERY_BANK_OUT=file takes what SAVE writes.
  * Build and run: tools/listen.py (which also measures the parts against each other). */
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,8 +36,28 @@ static void h_led(uint32_t id, uint32_t on) { (void)id; (void)on; }
 static uint32_t h_rand(void) { static uint32_t r = 1; r = r * 1664525u + 1013904223u; return r; }
 static int h_load(void *p, uint32_t n) { (void)p; (void)n; return 1; }
 static void h_save(const void *p, uint32_t n) { (void)p; (void)n; }
-static int h_bank_load_n(uint32_t i, void *p, uint32_t n) { (void)i; (void)p; (void)n; return -1; }
-static int h_bank_save_n(uint32_t i, const void *p, uint32_t n) { (void)i; (void)p; return (int)n; }
+/* the setups' bank: none, unless ORRERY_BANK names a file (read as the dock does: its length, or -1 when it is longer
+ * than asked for); a save goes to ORRERY_BANK_OUT when that is set */
+static int h_bank_load_n(uint32_t i, void *p, uint32_t n)
+{
+    const char *name = getenv("ORRERY_BANK");
+    static uint8_t bank[8176];
+    FILE *f = name && i == 1u ? fopen(name, "rb") : 0;
+    size_t got;
+    if (!f) return -1;
+    got = fread(bank, 1, sizeof bank, f);
+    fclose(f);
+    if (!got || got > n) return -1;
+    memcpy(p, bank, got);
+    return (int)got;
+}
+static int h_bank_save_n(uint32_t i, const void *p, uint32_t n)
+{
+    const char *name = getenv("ORRERY_BANK_OUT");
+    FILE *f = name && i == 1u ? fopen(name, "wb") : 0;
+    if (f) { fwrite(p, 1, n, f); fclose(f); }
+    return (int)n;
+}
 
 static void event(const char *e)
 {

@@ -554,3 +554,31 @@ committed):
   no --scintilla-ref copies fm1-harbor-proc's working Synthex, which is newer than the one here (six files differ):
   it was run by mistake and the six put back as committed. Taking the newer Synthex is a change of its own.
 
+2026-11-22, the harmonic voice. The owner pasted what else was on those records (EMS VCS 3 / Synthi AKS, RMI Harmonic
+Synthesizer) and "arp and eminent we do have". Since the last entry the tree was committed, pushed
+(github.com/joakimeriksson/orrery-fm1) and tagged v0.1.0: what follows is uncommitted, nothing sent to a device.
+- The VCS 3's part is the effects box's already (sweeps, wind, birds, bleeps): said so in the README, nothing changed
+  in it.
+- The RMI is new: instruments/harmonic.c, an instrument of its own (not an engine from fm1-dock). Two generators, each
+  a wave of sixteen harmonics at set levels, each with an attack / decay / sustain / release of its own, the second
+  tuned against the first (semitones and cents). Sources agree the RMI was monophonic with two sixteen-slider
+  generators and an arpeggiator; this one has six voices (a run's notes ring over each other), no filter and no
+  arpeggiator of its own (the lead's run and phrases do that). The waves are drawn offline
+  (tools/gen_harmonic_tables.py -> harmonic_tables.h, 14 KiB of flash): 16 harmonics in 256 points, 8 in 128, 4 in 64,
+  chosen by the key so nothing passes 20 kHz. Envelopes move every 16 samples, counted in the voice: the output is
+  the same however a block is cut (tested, spans 1 .. 256). Its render is in the flash (60 B of RAM text left).
+- The session takes a third instrument a track (config.third, MD_CMD_BIND value 2); the lead's is this voice.
+  set.lead_soft 3, the sound in set.lead_sx: the record's layout and magics are 0.1.0's. In the lead's list the eight
+  are the last (91 .. 98, after the Synthex's: the owner's choice, so 0.1.0's places and MIDI program numbers stay).
+- Setup 18 PRISM (G Lydian, 92: the Eminent through a quicker phaser, HARMONIC PLUCK with the HARP phrase, BUBBLES).
+  A setups bank saved with fewer setups loads (0.1.0's seventeen), the new ones the factory's: tested with
+  tools/render_setups.c, which takes ORRERY_BANK / ORRERY_BANK_OUT now.
+- Levels through the module (a key held on RAIN, the lead alone): SOFT LEAD 70.7 dB; PIPES, BRIGHT REED, SOFT FLUTE,
+  NASAL LEAD brought to it (HM_LEVEL 57, 87, 60, 113); the struck ones as made. Every sound's fundamental is where
+  its key is (harmonic_test). tools/listen.py numbers setups from 0 (PRISM is 17).
+- Checked: 17 native suites (harmonic_test new; session_test has the third binding); module.dock crc 73b13c79, code
+  177460 B (19 KiB more: the waves), bss 270012 of 278528, ram_text 16324; orrery_emu.py all passed (55.9 %); all
+  eighteen setups a minute each in fm1-emu with six lead keys held: 0 overruns, worst 41.1 .. 55.9 % (PRISM 46.1,
+  LASER with the Synthex 50.7). The existing setups render as before (DAWN's parts to a tenth of a dB). Not done:
+  the one-core timing build, the device, and whether the SMK-37's image still has room for the larger module.
+

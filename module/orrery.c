@@ -66,6 +66,7 @@
 #include "instruments/minipops.h"
 #include "instruments/electronic_fx.h"
 #include "instruments/synthex.h"
+#include "instruments/harmonic.h"
 #include "instruments/ensemble.h"
 #include "effects/effects.h"
 #include "engines/arp_presets.h"
@@ -133,11 +134,12 @@ typedef struct {                                /* the settings: the module's re
     uint8_t amb_arp;                            /* AMBIENT: the lead's background run on */
     uint8_t lvl_wind, lvl_fx, lead_rev;         /* PARTS page: the wind's level, the effects box's, the lead's reverb */
     uint8_t wind_col;                           /* PARTS page: the wind's colour, low to high */
-    uint8_t lead_soft;                          /* the lead: 0 the 2600's lead_patch, 1 SOFT LEAD, 2 the Synthex's lead_sx */
+    uint8_t lead_soft;                          /* the lead: 0 the 2600's lead_patch, 1 SOFT LEAD, 2 the Synthex's lead_sx,
+                                                 * 3 the HARMONIC voice's (lead_sx too) */
     uint8_t setup;                              /* which of the setups this is */        
     uint8_t hall;                               /* ECHO + SELECT: the reverb's hall (HALLS) */
     uint8_t motion;                             /* MIX + SELECT: the slow filter sweeps' depth, percent */
-    uint8_t lead_sx;                            /* the Synthex patch (0..79) when lead_soft is 2 */
+    uint8_t lead_sx;                            /* the Synthex patch (0..79) when lead_soft is 2; the HARMONIC sound (0..7) when 3 */
     uint8_t run;                                /* LEAD + SELECT: a key plays a rising run (0 off; in the tail padding) */
     int8_t fx_speed;                            /* PARTS + SELECT: the gestures' speed, -4 slow .. +4 fast (0 as made) */
     uint8_t phrase;                             /* AMBIENT: the lead's own phrase, 0 none or its style (PARTS + SEL) */
@@ -164,6 +166,8 @@ static md_effect_t echo_fx, reverb_fx, master_fx, warm_fx;
 static md_electronic_fx_state_t fx_state;       /* the effects box (track 4): run, droplets, chirps, the wind */
 static md_synthex_state_t sx_state;             /* the Elka Synthex: the lead track's alternate (the laser harp) */
 static md_instrument_t sx;
+static md_harmonic_state_t hm_state;            /* the HARMONIC voice (two generators of sixteen harmonics): the lead's third */
+static md_instrument_t hm;
 static md_ensemble_state_t ens_state;           /* Caravel's ENSEMBLE: the strings track's alternate (its fourteen pads) */
 static md_instrument_t ens;
 static int32_t wind_sent = -1;                  /* the wind level the box last took */
@@ -261,12 +265,14 @@ static int send_list(uint8_t track, const int32_t (*list)[2], uint32_t n)
     return 0;
 }
 /* The lead's sounds: SOFT LEAD (the 2600's ARP LEAD made soft), LASER HARP (the Synthex's own "Ring mod."), the
- * 2600's ten as they are, then the Synthex's other 79 factory patches. A Synthex sound binds the lead track to the
- * Synthex (its alternate instrument); the others bind it back to the 2600. */
+ * 2600's ten as they are, the Synthex's other 79 factory patches, then the HARMONIC voice's eight (at the end: the
+ * places 0.1.0 gave the others stay). A Synthex sound binds the lead track to the Synthex (its alternate
+ * instrument), a HARMONIC one to that voice (its third); the others bind it back to the 2600. */
 #define SOFT_BASE 3u                             /* ARP LEAD under SOFT LEAD */
 #define LEAD_BASE (set.lead_soft == 1u ? SOFT_BASE : set.lead_patch % ARP_N_PATCHES)
 #define SX_FIRST (2u + ARP_N_PATCHES)            /* the Synthex patches after the 2600's */
-#define N_LEAD_SOUNDS (SX_FIRST + MD_SYNTHEX_PATCHES - 1u)
+#define HM_FIRST (SX_FIRST + MD_SYNTHEX_PATCHES - 1u)   /* the HARMONIC sounds after those */
+#define N_LEAD_SOUNDS (HM_FIRST + MD_HARMONIC_SOUNDS)
 /* the Synthex's own level: its patches are loud, and not equally: the struck and the soft ones (a held G4 measured,
  * tools scratch sx.c) come up to where the brass and the laser harp sit at 40 */
 static int32_t sx_level(uint32_t patch)
@@ -279,20 +285,25 @@ static int32_t sx_level(uint32_t patch)
     }
 }
 static uint32_t sx_ring;                         /* "Ring mod.": the laser harp */
+/* the HARMONIC sounds' levels: a held key of the four that sustain where SOFT LEAD's is at the same fader (70.5 dB,
+ * measured through the module); the struck ones as they are, their first half second about the laser harp's */
+static const uint8_t HM_LEVEL[MD_HARMONIC_SOUNDS] = {100, 90, 100, 57, 87, 60, 90, 113};
 static uint32_t lead_pos(void)
 {
     if (set.lead_soft == 1u) return 0;
+    if (set.lead_soft == 3u) return HM_FIRST + set.lead_sx % MD_HARMONIC_SOUNDS;
     if (set.lead_soft == 2u)
         return set.lead_sx == sx_ring ? 1u : SX_FIRST + (set.lead_sx < sx_ring ? set.lead_sx : set.lead_sx - 1u);
     return 2u + set.lead_patch % ARP_N_PATCHES;
 }
-static void lead_set(uint32_t p)                /* 0 SOFT LEAD, 1 LASER HARP, 2..11 the 2600's, then the Synthex's */
+static void lead_set(uint32_t p)                /* 0 SOFT LEAD, 1 LASER HARP, 2..11 the 2600's, 12..90 the Synthex's, 91..98 HARMONIC */
 {
     if (p >= N_LEAD_SOUNDS) p = N_LEAD_SOUNDS - 1u;
     if (p == 0) { set.lead_soft = 1; set.lead_res = 15; set.lead_glide = 20; set.lead_cut = 5; }
     else if (p == 1) { set.lead_soft = 2; set.lead_sx = (uint8_t)sx_ring; }
     else if (p < SX_FIRST) { set.lead_soft = 0; set.lead_patch = (uint8_t)(p - 2u); set.lead_res = set.lead_glide = 255; }
-    else { set.lead_soft = 2; p -= SX_FIRST; set.lead_sx = (uint8_t)(p < sx_ring ? p : p + 1u); }
+    else if (p < HM_FIRST) { set.lead_soft = 2; p -= SX_FIRST; set.lead_sx = (uint8_t)(p < sx_ring ? p : p + 1u); }
+    else { set.lead_soft = 3; set.lead_sx = (uint8_t)(p - HM_FIRST); }
 }
 static void lead_select(int32_t pos)
 {
@@ -302,6 +313,7 @@ static void lead_select(int32_t pos)
 static void lead_name(char *out)                 /* the sound's name, upper case (the Synthex's are mixed) */
 {
     const char *n = set.lead_soft == 1u ? "SOFT LEAD" : set.lead_soft == 0u ? ARP_PATCHES[set.lead_patch % ARP_N_PATCHES].name :
+                    set.lead_soft == 3u ? md_harmonic_name(set.lead_sx) :
                     set.lead_sx == sx_ring ? "LASER HARP" : md_synthex_name(set.lead_sx);
     uint32_t i;
     for (i = 0; n[i] && i < 15u; i++) out[i] = (char)(n[i] >= 'a' && n[i] <= 'z' ? n[i] - 32 : n[i]);
@@ -324,6 +336,8 @@ static int send_lead(void)
     const arp_patch_t *q = &ARP_PATCHES[LEAD_BASE];
     if (set.lead_soft == 2u)                     /* the Synthex: its patch and level (the 2600's knobs rest) */
         return param(T_LEAD, MD_SYNTHEX_PATCH, set.lead_sx) || param(T_LEAD, MD_SYNTHEX_LEVEL, sx_level(set.lead_sx));
+    if (set.lead_soft == 3u)                     /* the HARMONIC voice: the same */
+        return param(T_LEAD, MD_HARMONIC_SOUND, set.lead_sx) || param(T_LEAD, MD_HARMONIC_LEVEL, HM_LEVEL[set.lead_sx % MD_HARMONIC_SOUNDS]);
     if (set.lead_soft == 1u && send_list(T_LEAD, SOFT, sizeof SOFT / sizeof SOFT[0])) return 1;
     return param(T_LEAD, MD_ARP_CUTOFF, clamp8((int32_t)q->cutoff + set.lead_cut, 0, 100)) ||
            param(T_LEAD, MD_ARP_RESONANCE, set.lead_res == 255u ? q->reso : set.lead_res) ||
@@ -415,7 +429,7 @@ static int send_echo(void)
 static int send_scene(void)
 {
     /* the strings' warming filter, the reverb's character */
-    return command(MD_CMD_BIND, T_LEAD, 0, set.lead_soft == 2u ? 1u : 0u) ||   /* the Synthex or the 2600 */
+    return command(MD_CMD_BIND, T_LEAD, 0, set.lead_soft == 2u ? 1u : set.lead_soft == 3u ? 2u : 0u) ||   /* the Synthex, HARMONIC or the 2600 */
            command(MD_CMD_BIND, T_STRINGS, 0, STR_ENS ? 1u : 0u) ||           /* an ENSEMBLE pad or the Eminent */
            command(MD_CMD_BYPASS, T_STRINGS, 0, AMBIENT || set.motion ? 0u : 1u) ||
            param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_ALGORITHM, HALLS[set.hall % N_HALLS].kind) ||
@@ -428,8 +442,8 @@ static void pump(void)                          /* main loop: send what changed,
     if (todo & G_SCENE) return;                  /* the binding first: later parameters are for its instrument */
     if ((todo & G_TEMPO) && !command(MD_CMD_TEMPO, 0, 0, (uint32_t)set.tempo * 256u)) todo &= ~G_TEMPO;
     if ((todo & G_BANK) && !send_bank()) todo &= ~G_BANK;
-    if ((todo & G_LEAD_SOUND) && (set.lead_soft == 2u || !send_sound(T_LEAD, LEAD_BASE)))
-        todo = (todo & ~G_LEAD_SOUND) | G_LEAD;     /* (the Synthex takes its patch as a parameter) */
+    if ((todo & G_LEAD_SOUND) && (set.lead_soft >= 2u || !send_sound(T_LEAD, LEAD_BASE)))
+        todo = (todo & ~G_LEAD_SOUND) | G_LEAD;     /* (the Synthex and HARMONIC take their sound as a parameter) */
     if ((todo & G_BASS_SOUND) && !(todo & G_LEAD_SOUND) && !send_sound(T_BASS, set.bass_patch)) todo = (todo & ~G_BASS_SOUND) | G_BASS;
     if ((todo & G_LEAD) && !(todo & G_LEAD_SOUND) && !send_lead()) todo &= ~G_LEAD;
     if ((todo & G_BASS) && !(todo & G_BASS_SOUND) && !send_bass()) todo &= ~G_BASS;
@@ -514,7 +528,8 @@ static void sanitize(void)                       /* a record or a bank from flas
 {
     if (set.scene > MD_BAND_SCENE_AMBIENT) set.scene = MD_BAND_SCENE_AMBIENT;
     if (set.amb_arp > 1u) set.amb_arp = 1;
-    if (set.lead_soft > 2u) set.lead_soft = 1;
+    if (set.lead_soft > 3u) set.lead_soft = 1;
+    if (set.lead_soft == 3u && set.lead_sx >= MD_HARMONIC_SOUNDS) set.lead_sx = 0;
     if (set.lead_sx >= MD_SYNTHEX_PATCHES) set.lead_sx = (uint8_t)sx_ring;
     if (set.hall >= N_HALLS) set.hall = AMBIENT ? HALL_AMBIENT : HALL_BAND;
     for (uint32_t k = 0; k < MD_BAND_FX_EVENTS; k++) {
@@ -740,10 +755,10 @@ static void run_fill(run_t *r, uint32_t note, uint32_t pcs, uint32_t root, uint3
     run_shape(r, up, n, shape);
 }
 /* the lead's notes must each be heard: the 2600's glide off and the soft lead's slow swell short while a run plays,
- * the sound's own again after (the Synthex has neither) */
+ * the sound's own again after (the Synthex and HARMONIC have neither) */
 static void run_crisp(uint32_t on)
 {
-    if (set.lead_soft == 2u) return;
+    if (set.lead_soft >= 2u) return;
     (void)param(T_LEAD, MD_ARP_GLIDE, on ? 0 : set.lead_glide == 255u ? ARP_PATCHES[LEAD_BASE].glide : set.lead_glide);
     if (set.lead_soft == 1u) (void)param(T_LEAD, MD_ARP_AMP_ATTACK, on ? 8 : 55);
 }
@@ -1699,7 +1714,10 @@ static int init(const hb_host_t *h)
     if (HB_HOST_HAS(H, bank_load_n)) {
         static set_t loaded[N_SETUPS];
         uint32_t magic = 0;
-        if (H->bank_load_n(1, &store, sizeof store) == (int)sizeof store && store.magic == SETUPS_MAGIC) magic = 1;
+        int got = H->bank_load_n(1, &store, sizeof store);
+        /* a bank of fewer setups (0.1.0 saved seventeen) is the first of these: the rest stay the factory's */
+        if (got >= (int)(4u + sizeof(set_t)) && got <= (int)sizeof store && ((uint32_t)got - 4u) % sizeof(set_t) == 0u &&
+            store.magic == SETUPS_MAGIC) magic = 1;
         if (!magic) {                            /* none, or another layout: the factory's again */
             for (k = 0; k < N_SETUPS; k++) { factory(k); loaded[k] = set; }
             for (k = 0; k < N_SETUPS; k++) store.s[k] = loaded[k];
@@ -1726,6 +1744,7 @@ static int init(const hb_host_t *h)
         md_effect_init(&warm_fx, &MD_FX_FILTER, &warm_state, sizeof warm_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&inst[T_FX], &MD_ELECTRONIC_FX, &fx_state, sizeof fx_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&sx, &MD_SYNTHEX, &sx_state, sizeof sx_state, MD_SAMPLE_RATE) ||
+        md_instrument_init(&hm, &MD_HARMONIC, &hm_state, sizeof hm_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&ens, &MD_ENSEMBLE, &ens_state, sizeof ens_state, MD_SAMPLE_RATE)) {
         H->log("orrery: an instrument or effect failed to start");
         return 1;
@@ -1745,6 +1764,7 @@ static int init(const hb_host_t *h)
     c.master = &master_fx;                       /* the master sweep: bypassed until a page asks for it */
     c.insert[T_STRINGS][0] = &warm_fx;
     c.alternate[T_LEAD] = &sx;
+    c.third[T_LEAD] = &hm;
     c.alternate[T_STRINGS] = &ens;
     /* five parts are over one core's budget: some render on the second core
      * while this one renders the rest; the session does it here when the core is not available */

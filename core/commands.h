@@ -38,7 +38,7 @@ typedef enum {
     MD_CMD_BYPASS,         /* track (0xff master), arg slot, value 0/1 */
     MD_CMD_BANK,           /* arg staged bank index, value generation */
     MD_CMD_SOUND,          /* track, value generation; payload in the session's sound slot */
-    MD_CMD_BIND            /* track, value 0 its instrument, 1 its alternate (config.alternate) */
+    MD_CMD_BIND            /* track, value 0 its instrument, 1 its alternate (config.alternate), 2 its third (config.third) */
 } md_command_kind_t;
 
 typedef struct {

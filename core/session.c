@@ -145,11 +145,17 @@ int md_session_init(md_session_t *s, const md_session_config_t *c)
     for (uint32_t t = 0; t < MD_TRACKS; t++) {
         s->choice[t][0] = c->instrument[t];
         s->choice[t][1] = c->alternate[t];
-        if (c->alternate[t] && (!c->alternate[t]->desc || !c->alternate[t]->state || c->alternate[t] == c->instrument[t]))
-            return MD_ERR_ARGUMENT;
-        for (uint32_t u = 0; c->alternate[t] && u < MD_TRACKS; u++)   /* no state shared with any other instance */
-            if ((c->instrument[u] && c->instrument[u]->state == c->alternate[t]->state) ||
-                (u != t && c->alternate[u] && c->alternate[u]->state == c->alternate[t]->state)) return MD_ERR_ARGUMENT;
+        s->choice[t][2] = c->third[t];
+        for (uint32_t k = 1; k < 3u; k++) {
+            const md_instrument_t *x = s->choice[t][k];
+            if (!x) continue;
+            if (!x->desc || !x->state) return MD_ERR_ARGUMENT;
+            for (uint32_t u = 0; u < MD_TRACKS; u++) {   /* no state shared with any other instance */
+                const md_instrument_t *others[3] = {c->instrument[u], c->alternate[u], c->third[u]};
+                for (uint32_t j = 0; j < 3u; j++)
+                    if (others[j] && !(u == t && j == k) && (others[j] == x || others[j]->state == x->state)) return MD_ERR_ARGUMENT;
+            }
+        }
     }
     memcpy(s->insert, c->insert, sizeof s->insert);
     memcpy(s->bus, c->bus, sizeof s->bus);
@@ -377,7 +383,7 @@ static int swap_bank(md_session_t *s, const md_command_t *c)
 }
 static int bind(md_session_t *s, const md_command_t *c)
 {
-    if (c->track >= MD_TRACKS || c->value > 1u) return MD_ERR_RANGE;
+    if (c->track >= MD_TRACKS || c->value > 2u) return MD_ERR_RANGE;
     md_instrument_t *next = s->choice[c->track][c->value];
     if (!next) return MD_ERR_NOT_FOUND;
     if (next == s->instrument[c->track]) return MD_OK;

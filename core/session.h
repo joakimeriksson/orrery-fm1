@@ -48,7 +48,7 @@
  * long chord or a burst from the effects box, does not find the other core idle. With no second core nothing is recorded:
  * each event is applied as it is routed, as ever.
  *
- * Bindings. A track may name an alternate instrument at init; MD_CMD_BIND switches between the two at a
+ * Bindings. A track may name an alternate instrument at init, and a third; MD_CMD_BIND switches between them at a
  * block start, after a panic of that track (its notes released, the outgoing instrument reset), and reads the
  * incoming instrument's parameters as the track's new bases. Both instances stay owned by the caller.
  *
@@ -89,6 +89,7 @@ typedef struct {
                                                            * track may go to either core: no two instances of an
                                                            * engine with static state among them. */
     md_instrument_t *alternate[MD_TRACKS];                /* optional second instrument a track can switch to */
+    md_instrument_t *third[MD_TRACKS];                    /* and a third */
     md_effect_t *insert[MD_TRACKS][MD_MIX_INSERTS];        /* initialised, or NULL */
     md_effect_t *bus[MD_MIX_BUSES];
     md_effect_t *master;
@@ -140,7 +141,7 @@ typedef struct {
 
     /* audio only (and init) */
     md_instrument_t *instrument[MD_TRACKS];
-    md_instrument_t *choice[MD_TRACKS][2];  /* a track's instrument and its alternate */
+    md_instrument_t *choice[MD_TRACKS][3];  /* a track's instrument, its alternate and its third */
     md_effect_t *insert[MD_TRACKS][MD_MIX_INSERTS];
     md_effect_t *bus[MD_MIX_BUSES];
     md_effect_t *master;

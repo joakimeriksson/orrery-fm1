@@ -500,9 +500,24 @@ static int alternate_binding(void)
     CHECK(md_session_note_off(&S, 0, MD_SOURCE_PANEL, held) == MD_OK && !run(16) && alt_state.voice_count == 1);  /* stale */
     CHECK(command(MD_CMD_BIND, 0, 0, 0) == MD_OK && !run(16) && alt_state.voice_count == 0);
     CHECK(md_session_note_off(&S, 0, MD_SOURCE_PANEL, next) == MD_OK && !run(16));
-    CHECK(command(MD_CMD_BIND, 1, 0, 1) == MD_OK && command(MD_CMD_BIND, 0, 0, 2) == MD_OK && !run(16));
+    CHECK(command(MD_CMD_BIND, 1, 0, 1) == MD_OK && command(MD_CMD_BIND, 0, 0, 3) == MD_OK &&
+          command(MD_CMD_BIND, 0, 0, 2) == MD_OK && !run(16));
     md_session_snapshot_t snap;
-    CHECK(md_session_snapshot(&S, &snap) == MD_OK && snap.command_errors == 2);   /* no alternate; bad value */
+    CHECK(md_session_snapshot(&S, &snap) == MD_OK && snap.command_errors == 3);   /* no alternate; bad value; no third */
+    CHECK(md_router_owned_count(&S.router) == 0 && voices() == 0);
+    /* a third instrument: bound by 2, and it may share nothing with the other two */
+    static fake_instrument_state_t third_state;
+    static md_instrument_t third;
+    CHECK(md_instrument_init(&third, &FAKE_INSTRUMENT_MONO, &third_state, sizeof third_state, MD_SAMPLE_RATE) == MD_OK);
+    third_state.gain = 23;
+    c.third[0] = &alt;
+    CHECK(md_session_init(&S, &c) == MD_ERR_ARGUMENT);          /* the alternate itself */
+    c.third[0] = &third;
+    CHECK(md_session_init(&S, &c) == MD_OK);
+    CHECK(command(MD_CMD_BIND, 0, 0, 2) == MD_OK && !run(16) && S.base[0][0] == 23);
+    CHECK(md_session_note_on(&S, 0, MD_SOURCE_PANEL, 64, 100, 0, &next) == MD_OK && !run(16));
+    CHECK(third_state.voice_count == 1 && alt_state.voice_count == 0 && fake[0].voice_count == 0);
+    CHECK(command(MD_CMD_BIND, 0, 0, 1) == MD_OK && !run(16) && third_state.voice_count == 0 && S.base[0][0] == 17);
     CHECK(md_router_owned_count(&S.router) == 0 && voices() == 0);
     return 0;
 }

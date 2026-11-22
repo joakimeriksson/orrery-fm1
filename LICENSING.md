@@ -8,7 +8,7 @@ complete source under the same licence too.
 
 | | |
 | --- | --- |
-| The module `module/`, the portable session `core/`, the instruments' adapters and the effects box `instruments/`, the effects `effects/`, the tools and the tests | Joakim Eriksson |
+| The module `module/`, the portable session `core/`, the instruments' adapters, the effects box and the harmonic voice `instruments/`, the effects `effects/`, the tools and the tests | Joakim Eriksson |
 | The ARP 2600 with its 1601 sequencer `engines/arp_*`, the Eminent 310 with the Small Stone `engines/em_*`, the Korg Mini Pops 7 `engines/mp_*` | Joakim Eriksson, written for [fm1-dock](https://github.com/joakimeriksson/fm1-dock); copied in by `take.py` |
 | The Elka Synthex `engines/sc_*` | Joakim Eriksson ([Scintilla](https://github.com/joakimeriksson/scintilla-fm1)), by way of fm1-dock |
 | The ENSEMBLE pads `engines/ens_engine.c`, `ens_engine.h`, `ens_tables.h` (`tools/gen_ens_tables.py`) | ported from [Caravel](https://github.com/bonszaimusic/caravel) 0.11.0's ENSEMBLE by bonszaimusic (GPL-3.0-only), with the DSP blocks it uses from [Felucca-Engines](https://github.com/hugelton/Felucca-Engines) by Leo Kuroshita (@kurogedelic), Hügelton Instruments (MIT) |
@@ -27,6 +27,7 @@ that file is not in this one.
 ## Names
 
 ARP 2600, Eminent 310, Korg Mini Pops 7, Electro-Harmonix Small Stone and Elka Synthex are the names of the
-instruments these engines are modelled on, and belong to their owners; so do "M-VAVE", "FM-1", "Felucca" and
+instruments these engines are modelled on, and belong to their owners; RMI Harmonic Synthesizer, EMS VCS 3 and
+Synthi AKS are named for a principle and a part (the harmonic voice, the effects box), not as models; so do "M-VAVE", "FM-1", "Felucca" and
 "Hügelton Instruments". Nothing here is made or endorsed by them, and no recording or sample of anyone's is in it:
 every sound is synthesized.
