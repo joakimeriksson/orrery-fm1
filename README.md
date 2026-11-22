@@ -13,7 +13,8 @@ at a time, and a band needs its strings, lead, bass and drums at once.
 | **bass** | the same engine again | a second 2600 with its 1601 sequencer: eight sixteen-step sequences with their patterns (two bars as written, one a step up, ...) and a filter sweep |
 | **drums** | `engines/mp_engine.c` | the Korg Mini Pops 7, from its service manual |
 | **echo** | `effects/echo.c` | a tape echo at a division of the tempo, fed by the strings and the lead; the bass and the drums stay dry, as on the records |
-| **effects box** | `instruments/electronic_fx.c` | thirteen background sounds in stereo (droplets, glass, shots, gulls, sweeps, surf, thunder), a wind, and a sequence of its own (FX SEQ below) |
+| **effects box** | `instruments/electronic_fx.c` | thirteen background sounds in stereo (droplets, glass, shots, gulls, sweeps, surf, thunder), a wind, and a sequence of its own (FX SEQ below): the part the EMS VCS 3 and Synthi AKS had on those records, made for it and not a model of either |
+| **harmonic voice** | `instruments/harmonic.c` | a third instrument for the lead, on the RMI Harmonic Synthesizer's principle: two generators of sixteen harmonics at set levels, each with an envelope of its own, the second tuned against the first. Eight sounds (HARMONIC PLUCK, HOLLOW PLUCK, GLASS BELLS, PIPES, BRIGHT REED, SOFT FLUTE, OCTAVE CHIME, NASAL LEAD), six keys at once so a run rings over itself; ALGORITHM on the LEAD page, the last eight of its list (after the Synthex's). Its waves come from `tools/gen_harmonic_tables.py` |
 | **pads** | `engines/ens_engine.c` | the strings' other voice: Caravel's ENSEMBLE, fourteen string / choir / dark pads in a stereo three-tap ensemble (ALGORITHM on the STRINGS page past the Eminent's four registrations) |
 | **chords** | `module/orrery.c` | a chord a link of the bass pattern: the strings move with the bass, nothing to keep in time |
 
@@ -42,7 +43,7 @@ before claiming work. Progress and handoffs live in `WORK.json` and `work/agents
 | | |
 | --- | --- |
 | **EDIT** | STRINGS: KNOB1..4 attack, release, chorus, phaser; ALGORITHM the registration; FX the phaser's colour |
-| **PRESETS** | on every page: the setup, round the seventeen (below); a banner names it for two seconds (the header says PRESETS: SETUP) |
+| **PRESETS** | on every page: the setup, round the eighteen (below); a banner names it for two seconds (the header says PRESETS: SETUP) |
 | **GLO** | LEAD: ALGORITHM the patch; KNOB1..4 cutoff, resonance, glide, level; SELECT the run: OFF, PENTA / SCALE / CHORD, each FAST (70 ms a note) or 1/16 of the tempo; glide off and, on the soft lead, a short attack while a run plays. With a run on, a key (or a MIDI note) plays a rise from itself through the chord's scale, two octaves up, and holds the top while held |
 | **ENV** | BASS: ALGORITHM the patch, SELECT the sequence (its pattern and tempo with it); KNOB1..4 cutoff, sweep, tempo, level |
 | **LFO** | DRUMS: the white keys from F3 are the rhythm keys (together they combine), F#3 G#3 A#3 the tambourine, guiro and quijada, OCT−/OCT+ the lever; ALGORITHM one rhythm; KNOB1..4 tempo, level, balance, the extras' level |
@@ -60,7 +61,7 @@ mod wheel) closes a low-pass over everything, CC 64 holds the lead.
 
 ## The setups
 
-Seventeen scenes to play a lead over, each a different place in the manner of the French and Greek electronic
+Eighteen scenes to play a lead over, each a different place in the manner of the French and Greek electronic
 records of 1976-82 (none copied, and no name a title): PRESETS steps through them, SAVE keeps them all as edited.
 Each ambient scene has a harmony and a hall of its own, and its chords are voiced the way hands play them: the
 notes two chords share stay where they are.
@@ -84,9 +85,10 @@ notes two chords share stay where they are.
 | 15 **COMET** | band, A minor, 134 | the up-and-down arpeggio walking down a fourth, a pad on bare fifths, Rock 4, shots and sweeps |
 | 16 **ICE** | ambient, A (no third), 56 | a glass choir on bare fifths and suspended seconds, chimes, glass far up, a gust, the ice cracking low, a thin high wind |
 | 17 **TEMPLE** | ambient, D minor's five notes, 64 | fifths and suspensions, a pan flute calling three notes and waiting, a gong, a slow bell line, a cathedral |
+| 18 **PRISM** | ambient, G Lydian, 92 | the string ensemble through a quicker phaser, the harmonic voice's pluck playing a phrase of its own into a dotted echo, bubbles |
 
 In NEON, DAWN, ICE and TEMPLE the lead is one of the Synthex's own sounds (a brass that swells, vibes, chimes, pan
-flutes) and plays a phrase by itself; the keys play the same sound over it, and SEL on PARTS turns the phrase off.
+flutes), in PRISM the harmonic voice's pluck, and it plays a phrase by itself; the keys play the same sound over it, and SEL on PARTS turns the phrase off.
 
 In each, one part is in front (the strings; the lead when it is played), the bass 5 to 8 dB under it, the effects
 box and the wind under that, and every setup plays at the same loudness, so stepping through them does not jump.
@@ -152,7 +154,8 @@ oscillator, a tap at a time, the saws in runs between their steps) and the Mini 
 The same samples came out, and a block of all five parts on one core went from 50 .. 58 % of fm1-emu's budget to
 44 .. 53 %. Then the scenes were rewritten and the reverb rebuilt (above): it takes 4.5 % of a block where the old
 one took 3.7, and NEON's abyss pad with a Synthex brass over it is as dear as MAGNET's band (both about 54 % on one
-core, 63 at their peaks). All seventeen setups run a minute each in fm1-emu with no overrun. By these counts the
+core, 63 at their peaks). All eighteen setups run a minute each in fm1-emu with six lead keys held and no overrun (worst block 41 .. 56 %;
+PRISM, with the harmonic voice, 46 %). By these counts the
 device's worst block should be 50 .. 55 %; the next run on it will say.
 
 ## Build

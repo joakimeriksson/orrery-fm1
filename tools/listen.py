@@ -22,7 +22,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "build" / "listen" / "setups"
 BIN = ROOT / "build" / "listen" / "render_setups"
-SOURCES = """module/band.c module/seq.c instruments/electronic_fx.c instruments/ensemble.c engines/ens_engine.c
+SOURCES = """module/band.c module/seq.c instruments/electronic_fx.c instruments/ensemble.c instruments/harmonic.c engines/ens_engine.c
 instruments/synthex.c instruments/synthex_synth.c instruments/synthex_voice.c core/session.c core/commands.c core/mixer.c
 core/effect.c core/router.c core/instrument.c core/transport.c instruments/arp.c instruments/eminent.c
 instruments/minipops.c effects/filter.c effects/phaser.c effects/echo.c effects/reverb.c effects/registry.c
@@ -96,7 +96,7 @@ def main():
     ap.add_argument("--harbor", type=Path, default=ROOT.parent / "fm1-harbor-proc")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--script", default="")
-    ap.add_argument("--count", type=int, default=17, help="how many setups there are, when none is named")
+    ap.add_argument("--count", type=int, default=18, help="how many setups there are, when none is named")
     a = ap.parse_args()
     build(a.harbor)
     OUT.mkdir(parents=True, exist_ok=True)

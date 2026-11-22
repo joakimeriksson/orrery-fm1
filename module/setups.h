@@ -4,7 +4,7 @@
  * orrery.c only. Everything a player sees is a descriptive name: no artist, record or track title.
  *
  * To change a setup, edit its block in SETUPS; to add one, add a block and raise N_SETUPS (the setups' bank takes
- * up to 60 of them; a bank saved with another count is not loaded). To change what the box plays, edit a pattern or add one (and its FXP_ name). Then listen:
+ * up to 53 of them; a bank saved when there were fewer is loaded, and the new ones are the factory's). To change what the box plays, edit a pattern or add one (and its FXP_ name). Then listen:
  *     uv run --with numpy --with pillow tools/listen.py [SETUP ...] --png
  * prints every part's level and pitch classes and where the energy sits, without Docker or the emulator. A setup
  * should keep one part in front (the strings here), the bass 3-6 dB under it, the box and the wind under that, and
@@ -29,6 +29,9 @@ enum { L_SOFT, L_HARP };                         /* the lead: SOFT LEAD, LASER H
 /* one of the Synthex's other factory sounds by its number there (sc_presets: 4 Pan flutes, 28 Chimes, 29 Vibes,
  * 40 Cathedral choir, 51 Solo Violin, 75 Filtered brass: a brass that swells in half a second, ...; not 36) */
 #define L_SX(n) (12u + ((n) < 36u ? (n) : (n) - 1u))
+/* or one of the HARMONIC voice's eight (instruments/harmonic.c) */
+enum { HM_PLUCK, HM_HOLLOW_PLUCK, HM_GLASS_BELLS, HM_PIPES, HM_BRIGHT_REED, HM_SOFT_FLUTE, HM_OCTAVE_CHIME, HM_NASAL_LEAD };
+#define L_HM(n) (91u + (n))
 enum { PH_NONE, PH_HARP, PH_LONG, PH_BELLS, PH_CALLS };   /* AMBIENT's lead phrase (band.h) */
 /* the halls (orrery.c's HALLS): the reverb's kind, size and damping as one choice */
 enum { H_ROOM, H_PLATE, H_HALL, H_BIG_HALL, H_DARK_HALL, H_CATHEDRAL, H_VAST, H_ENDLESS };
@@ -178,7 +181,7 @@ static const fx_pattern_t FX_PATTERNS[N_FX_PATTERNS] = {
  * copied and none named after one. Seven of the first nine AMBIENT setups had the same eight chords in another key;
  * now each has its own harmony and its own hall: an Aeolian drift, a Dorian sea, a harmonic-minor city with a brass
  * that swells, a major-key hymn on vibes, a Phrygian cave, a descending-bass storm, a modal machine room, open
- * fifths on ice, a pentatonic temple. AMBIENT plays the eight chords two bars each over a held bass, voiced so a
+ * fifths on ice, a pentatonic temple, a Lydian prism. AMBIENT plays the eight chords two bars each over a held bass, voiced so a
  * tone two chords share stays where it is (band.c: voiced); BAND plays the 1601 sequence with a chord on each of its
  * links, on the link's root: a minor chord where the line stays on one chord a bar, SUS2 or a bare fifth where it
  * walks through others (a third would rub against them). Levels are percent of each part's fader and were set by
@@ -189,7 +192,7 @@ typedef struct {
     chord_t chord[ARP_CHAIN];                    /* AMBIENT: eight, two bars each; BAND: one a link of the sequence */
     /* the strings: voice, octave 0..4, then attack, release, chorus depth, phaser (a pad: its tone); PAD_OWN on a pad */
     uint8_t strings, octave, attack, release, depth, phaser;
-    uint8_t lead;                                /* L_SOFT, L_HARP, L_2600(P_...) or L_SX(n) */
+    uint8_t lead;                                /* L_SOFT, L_HARP, L_2600(P_...), L_HM(HM_...) or L_SX(n) */
     uint8_t run, phrase;                         /* AMBIENT's background: the box's run up the chords, the lead's phrase (PH_...) */
     uint8_t bass;                                /* the 2600 patch (AMBIENT softens it and holds the roots) */
     int8_t bass_cut;                             /* its cutoff, -50 .. +50 from the patch's */
@@ -200,7 +203,7 @@ typedef struct {
     uint8_t echo, echo_feedback, echo_tone, echo_strings, echo_lead;   /* E_..., then percent */
     uint8_t motion;                              /* the slow filter sweeps' depth */
 } setup_t;
-#define N_SETUPS 17u
+#define N_SETUPS 18u
 static const setup_t SETUPS[N_SETUPS] = {
     {   /* 1: the string ensemble through its slow phaser in C minor (Aeolian: i v VI III, then iv), a far Bossa Nova,
          * droplets and a run up each chord; the default */
@@ -356,5 +359,15 @@ static const setup_t SETUPS[N_SETUPS] = {
         .strings_level = 70, .lead_level = 60, .bass_level = 16, .drums_level = 0, .box_level = 36, .wind_level = 30, .wind_colour = 40,
         .hall = H_CATHEDRAL, .reverb = 65, .lead_reverb = 65, .echo = E_4TH, .echo_feedback = 50, .echo_tone = 40, .echo_strings = 12, .echo_lead = 50,
         .motion = 50 },
+    {   /* 18: light through glass: G with its raised fourth (Lydian: the major chord a tone up is the colour, and
+         * nothing pulls home), the string ensemble through a quicker phaser, the HARMONIC voice's pluck
+         * running a phrase of its own into a dotted echo, bubbles under it */
+        .name = "PRISM", .about = "HARMONIC PLUCK, BUBBLES", .scene = AMB, .tempo = 92,
+        .chord = {{nG, CH_MAJ7}, {nA, CH_MAJ}, {nB, CH_MIN7}, {nA, CH_MAJ}, {nG, CH_MAJ7}, {nE, CH_MIN7}, {nFs, CH_MIN7}, {nA, CH_SUS4}},
+        .strings = V_STRINGS, .octave = 1, .attack = 55, .release = 70, .depth = 60, .phaser = 55,
+        .lead = L_HM(HM_PLUCK), .phrase = PH_HARP, .bass = P_WARM_BASS, .rhythm = R_NONE, .extras_level = 70, .balance = 30, .fx = FXP_BUBBLES,
+        .strings_level = 90, .lead_level = 90, .bass_level = 16, .drums_level = 0, .box_level = 30, .wind_level = 20, .wind_colour = 60,
+        .hall = H_BIG_HALL, .reverb = 60, .lead_reverb = 55, .echo = E_8TH_DOT, .echo_feedback = 55, .echo_tone = 45, .echo_strings = 15, .echo_lead = 55,
+        .motion = 60 },
 };
 #endif
