@@ -281,6 +281,51 @@ static void ambient(const md_band_settings_t *s, md_seq_bank_t *b, md_band_chain
     drums(&b->pattern[MD_BAND_DRUMS][0], s, r);   /* soft drums: the rhythm keys, as BAND (none: no drums) */
     for (uint32_t p = 1; p < MD_PATTERNS_PER_TRACK; p++) b->pattern[MD_BAND_DRUMS][p] = b->pattern[MD_BAND_DRUMS][0];
 }
+/* the player's sequences as the lead's four patterns */
+static void lead_song(const md_band_settings_t *s, md_seq_bank_t *b)
+{
+    static const uint8_t DIV[3] = {MD_DIV_16TH, MD_DIV_8TH, MD_DIV_QUARTER};
+    for (uint32_t p = 0; p < MD_BAND_SEQS; p++) {
+        md_seq_pattern_t *q = &b->pattern[MD_BAND_LEAD][p];
+        empty(q, MD_PATTERN_MONO, MD_BAND_SEQ_STEPS, DIV[s->seq_div[p] % 3u]);
+        for (uint32_t k = 0; k < MD_BAND_SEQ_STEPS; k++) {
+            uint8_t v = s->seq[p][k], before = s->seq[p][(k + MD_BAND_SEQ_STEPS - 1u) % MD_BAND_SEQ_STEPS];
+            md_step_t *t = &q->step[k];
+            if (!(v & 127u)) continue;
+            t->payload = v & 127u;
+            t->velocity = 100;
+            t->gate = GATE_LONG;
+            /* tied: to the same key it is held on; to another it is slid to; after a rest it is a note like any */
+            if ((v & MD_BAND_SEQ_TIE) && (before & 127u))
+                t->flags |= (before & 127u) == (v & 127u) ? MD_STEP_TIE : MD_STEP_SLIDE;
+        }
+    }
+}
+uint32_t md_band_seq_bars(uint32_t div) { return div % 3u == 0u ? 1u : div % 3u == 1u ? 2u : 4u; }
+int md_band_song_at(const uint8_t song[MD_BAND_SONG_SLOTS], const uint8_t div[MD_BAND_SEQS], uint32_t bar, uint32_t *slot, uint32_t *into)
+{
+    uint32_t total = 0, n = 0, k;
+    if (!song || !div) return -1;
+    while (n < MD_BAND_SONG_SLOTS && song[n] >= 1u && song[n] <= MD_BAND_SEQS) total += md_band_seq_bars(div[song[n++] - 1u]);
+    if (!n) return -1;
+    bar %= total;
+    for (k = 0; k < n; k++) {
+        uint32_t bars = md_band_seq_bars(div[song[k] - 1u]);
+        if (bar < bars) break;
+        bar -= bars;
+    }
+    if (slot) *slot = k;
+    if (into) *into = bar;
+    return (int)song[k] - 1;
+}
+int md_band_song_next(const uint8_t song[MD_BAND_SONG_SLOTS], const uint8_t div[MD_BAND_SEQS], uint32_t bar, uint8_t pattern, uint8_t queued)
+{
+    uint32_t into = 0;
+    int next = md_band_song_at(song, div, bar + 1u, 0, &into);
+    if (next < 0 || queued) return -1;          /* (a pending launch is never replaced: md_band_next_link) */
+    if (into) return -1;                        /* in the middle of a sequence nothing is due */
+    return next == (int)pattern ? -1 : next;    /* (the same one again loops by itself) */
+}
 int md_band_build(const md_band_settings_t *s, md_seq_bank_t *b, md_band_chain_t *c, md_band_report_t *r)
 {
     if (!s || !b || !c || !r) return MD_ERR_ARGUMENT;
@@ -291,7 +336,11 @@ int md_band_build(const md_band_settings_t *s, md_seq_bank_t *b, md_band_chain_t
     for (uint32_t i = 0; i < 3; i++) b->global_owner[i] = MD_AUTOMATION_UNOWNED;
     for (uint32_t t = 0; t < MD_TRACKS; t++)        /* every track valid and silent until a scene fills it */
         for (uint32_t p = 0; p < MD_PATTERNS_PER_TRACK; p++) empty(&b->pattern[t][p], MD_PATTERN_MONO, 16, MD_DIV_16TH);
-    if (s->scene == MD_BAND_SCENE_AMBIENT) { ambient(s, b, c, r); return md_seq_bank_validate(b); }
+    if (s->scene == MD_BAND_SCENE_AMBIENT) {
+        ambient(s, b, c, r);
+        if (s->song_on) lead_song(s, b);
+        return md_seq_bank_validate(b);
+    }
     const arp_seq_t *q = &ARP_SEQS[s->bass_seq % ARP_N_SEQS];
     c->links = q->n_chain ? (uint8_t)(q->n_chain < MD_PATTERNS_PER_TRACK ? q->n_chain : MD_PATTERNS_PER_TRACK) : 1u;
     if (q->n_chain > MD_PATTERNS_PER_TRACK) r->links_dropped = (uint8_t)(q->n_chain - MD_PATTERNS_PER_TRACK);
@@ -313,6 +362,7 @@ int md_band_build(const md_band_settings_t *s, md_seq_bank_t *b, md_band_chain_t
         fx_events(s, fx, lock, 0, 64u);
         fx_locks(b, 0, lock);
     }
+    if (s->song_on) lead_song(s, b);
     return md_seq_bank_validate(b);
 }
 

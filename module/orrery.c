@@ -88,9 +88,9 @@
 #define T_DRUMS MD_BAND_DRUMS
 #define T_FX MD_BAND_FX
 
-enum { PG_STRINGS, PG_LEAD, PG_BASS, PG_DRUMS, PG_CHORDS, PG_MIX, PG_ECHO, PG_PARTS, PG_FXSEQ, N_PAGES };
+enum { PG_STRINGS, PG_LEAD, PG_BASS, PG_DRUMS, PG_CHORDS, PG_MIX, PG_ECHO, PG_PARTS, PG_FXSEQ, PG_STEPS, PG_SONG, N_PAGES };
 enum { CH_NONE, CH_MIN, CH_MAJ, CH_MIN7, CH_MAJ7, CH_SUS2, CH_SUS4, CH_5TH, N_KINDS };
-static const char *const PAGE_NAME[N_PAGES] = {"STRINGS", "LEAD", "BASS", "DRUMS", "CHORDS", "MIX", "ECHO", "PARTS", "FX SEQ"};
+static const char *const PAGE_NAME[N_PAGES] = {"STRINGS", "LEAD", "BASS", "DRUMS", "CHORDS", "MIX", "ECHO", "PARTS", "FX SEQ", "STEPS", "SONG"};
 static const char *const PART_NAME[5] = {"BASS", "LEAD", "STRINGS", "DRUMS", "FX BOX"};   /* by track */
 static const char *const KIND_NAME[N_KINDS] = {"-", "MIN", "MAJ", "MIN7", "MAJ7", "SUS2", "SUS4", "5TH"};
 static const uint8_t KIND_IV[N_KINDS][4] = {{0, 0, 0, 0}, {0, 3, 7, 12}, {0, 4, 7, 12}, {0, 3, 7, 10}, {0, 4, 7, 11}, {0, 2, 7, 12}, {0, 5, 7, 12}, {0, 7, 12, 19}};
@@ -125,6 +125,9 @@ typedef struct {                                /* the settings: the module's re
     uint8_t str_reg, str_att, str_rel, str_ens, str_ph, str_col, str_oct;
     int8_t lead_cut, bass_cut;
     uint8_t lead_res, lead_glide, bass_sweep;   /* (255: the patch's / the sequence's own) */
+    uint8_t phaser;                             /* FX + KNOB3 / KNOB4: the lead's phaser (the low four bits, 0 off .. 10)
+                                                 * and the effects box's (the high four). The byte was padding, 0 in every
+                                                 * record and bank 0.1.0 wrote (base_defaults clears them whole) */
     uint16_t tempo, rh_keys;
     uint8_t rh_section, rh_xmask, rh_extra, rh_balance;
     uint8_t lvl[4];                             /* strings, lead, bass, drums: percent */
@@ -147,6 +150,9 @@ typedef struct {                                /* the settings: the module's re
 } set_t;
 _Static_assert(sizeof(set_t) <= 240u, "the settings record");
 _Static_assert(sizeof(set_t) == 152u, "a change of layout needs new magics: saved records and banks are read as they are");
+_Static_assert(__builtin_offsetof(set_t, phaser) == 23u && __builtin_offsetof(set_t, tempo) == 24u, "phaser is the old padding byte");
+#define PH_LEAD ((uint32_t)set.phaser & 15u)
+#define PH_BOX ((uint32_t)set.phaser >> 4)
 _Static_assert(4u + N_SETUPS * sizeof(set_t) <= 8176u, "the setups' bank");
 
 static const hb_host_t *H;
@@ -163,6 +169,9 @@ static md_fx_echo_t echo_state;
 static md_fx_reverb_t reverb_state;
 static md_fx_filter_t master_state, warm_state;
 static md_effect_t echo_fx, reverb_fx, master_fx, warm_fx;
+static md_fx_phaser_t lead_ph_state, box_ph_state;   /* a phaser on the lead and one on the effects box (the records ran the
+                                                 * organ and the VCS 3 through one): inserts, idle at 0 */
+static md_effect_t lead_ph_fx, box_ph_fx;
 static md_electronic_fx_state_t fx_state;       /* the effects box (track 4): run, droplets, chirps, the wind */
 static md_synthex_state_t sx_state;             /* the Elka Synthex: the lead track's alternate (the laser harp) */
 static md_instrument_t sx;
@@ -176,6 +185,35 @@ static uint8_t muted;                           /* the pads' mutes, a bit a trac
 /* the setups: complete snapshots (scene, chords, tempo, rhythm, sounds, levels, echo, the box), the one playing
  * is set; switching keeps each one's edits in RAM, SAVE writes them all to bank 1 */
 static struct { uint32_t magic; set_t s[N_SETUPS]; } store;
+
+/* ---- the player's own sequences and song (band.h): a setup's own, on the lead's sound. Four sequences of sixteen
+ * steps written with the keys on the STEPS page (SEQ twice), and a song of up to sixteen slots on the SONG page (SEQ
+ * three times), each slot one sequence played through. The setup now is kept with the settings record (the two are
+ * 240 bytes, the record's most); SAVE keeps every setup's in bank 2. */
+typedef struct {
+    uint8_t step[MD_BAND_SEQS][MD_BAND_SEQ_STEPS];   /* a key (0 a rest), bit 7 tied to the step before */
+    uint8_t song[MD_BAND_SONG_SLOTS];                /* 0 the end, 1..4 A..D */
+    uint8_t div[MD_BAND_SEQS];                       /* a sequence's step: 0 1/16, 1 1/8, 2 1/4 */
+    uint8_t on;                                      /* the song plays with the setup */
+    uint8_t spare[3];
+} seq_t;
+_Static_assert(sizeof(seq_t) == 88u && sizeof(set_t) + sizeof(seq_t) <= 240u, "the settings record with the sequences");
+#define SEQS_MAGIC 0x31535252u                   /* "RRS1" */
+static seq_t sq;
+static struct { uint32_t magic; seq_t s[N_SETUPS]; } sq_store;
+_Static_assert(sizeof sq_store <= 8176u, "the sequences' bank");
+static uint8_t sq_cur, sq_step, sq_slot, sq_last = 60;   /* STEPS: the sequence and the step; SONG: the slot; the last key written */
+#define SONG_ON (sq.on && sq.song[0] >= 1u && sq.song[0] <= MD_BAND_SEQS)
+static void seq_write(uint32_t key);
+static char *put_key(char *p, uint32_t key);     /* a key's name: C4 is 60 */
+static uint32_t seq_playing(uint32_t *slot_out);
+static void seq_sanitize(seq_t *q)
+{
+    uint32_t k;
+    for (k = 0; k < MD_BAND_SONG_SLOTS; k++) if (q->song[k] > MD_BAND_SEQS) q->song[k] = 0;
+    for (k = 0; k < MD_BAND_SEQS; k++) if (q->div[k] > 2u) q->div[k] = 0;
+    q->on = q->on != 0;
+}
 static uint8_t restart;                         /* a setup changed while playing: start again once it is sent */
 static uint8_t fx_cur;                          /* FX SEQ: the event under the cursor (not saved) */
 static md_band_fx_event_t fx_own[MD_BAND_FX_EVENTS];   /* the player's own sequence while a pattern is tried (not saved) */
@@ -202,6 +240,7 @@ static uint8_t key_track[27];                   /* the part each held key starte
 static uint8_t solo_track = 0xffu;              /* SEL: the part heard alone, 0xff none (not saved) */
 static int32_t sweep_cut = 990, sweep_res;      /* FX held + KNOB1/2: the master filter (not saved) */
 static uint32_t fx_held, fx_used;
+static uint16_t rh_held;                         /* DRUMS: the rhythm keys down now */
 static uint8_t n_chord_on;
 
 static char *put_u(char *p, uint32_t v)
@@ -239,6 +278,12 @@ static void band_settings(md_band_settings_t *b)
     b->phrase = set.phrase;
     b->phrase_shift = set.lead_soft == 2u && set.lead_sx == 28u ? -12 : 0;   /* the Synthex's Chimes speak three octaves up */
     for (k = 0; k < MD_BAND_FX_EVENTS; k++) b->fx[k] = set.fx[k];
+    b->song_on = SONG_ON;
+    for (k = 0; k < MD_BAND_SEQS; k++) {
+        uint32_t j;
+        b->seq_div[k] = sq.div[k];
+        for (j = 0; j < MD_BAND_SEQ_STEPS; j++) b->seq[k][j] = sq.step[k][j];
+    }
 }
 static int send_bank(void)
 {
@@ -274,20 +319,27 @@ static int send_list(uint8_t track, const int32_t (*list)[2], uint32_t n)
 #define HM_FIRST (SX_FIRST + MD_SYNTHEX_PATCHES - 1u)   /* the HARMONIC sounds after those */
 #define N_LEAD_SOUNDS (HM_FIRST + MD_HARMONIC_SOUNDS)
 /* the Synthex's own level: its patches are loud, and not equally: the struck and the soft ones (a held G4 measured,
- * tools scratch sx.c) come up to where the brass and the laser harp sit at 40 */
+ * tools scratch sx.c) come up to where the brass and the laser harp sit at 40. The engine taken at dock b3180ee
+ * decodes the factory panel records as corrected against the recordings; the laser harp and the three that moved
+ * more than 3 dB by it are put back where they were (the same G4, both engines) */
 static int32_t sx_level(uint32_t patch)
 {
     switch (patch) {
+    case 23: return 67;                          /* Clavichord I: it falls away now */
+    case 27: return 21;                          /* Electric piano II */
     case 28: return 55;                          /* Chimes */
     case 29: return 85;                          /* Vibes */
+    case 36: return 51;                          /* Ring mod., the laser harp */
+    case 39: return 58;                          /* Whistle */
     case 60: case 73: case 74: case 44: return 80;   /* Plink, Marimba, Harp, Echo: plucked, they fall away */
     default: return 40;
     }
 }
 static uint32_t sx_ring;                         /* "Ring mod.": the laser harp */
 /* the HARMONIC sounds' levels: a held key of the four that sustain where SOFT LEAD's is at the same fader (70.5 dB,
- * measured through the module); the struck ones as they are, their first half second about the laser harp's */
-static const uint8_t HM_LEVEL[MD_HARMONIC_SOUNDS] = {100, 90, 100, 57, 87, 60, 90, 113};
+ * measured through the module: the organ too); the struck ones as they are, their first half second about the laser
+ * harp's */
+static const uint8_t HM_LEVEL[MD_HARMONIC_SOUNDS] = {100, 90, 100, 57, 87, 60, 90, 113, 50};
 static uint32_t lead_pos(void)
 {
     if (set.lead_soft == 1u) return 0;
@@ -432,6 +484,9 @@ static int send_scene(void)
     return command(MD_CMD_BIND, T_LEAD, 0, set.lead_soft == 2u ? 1u : set.lead_soft == 3u ? 2u : 0u) ||   /* the Synthex, HARMONIC or the 2600 */
            command(MD_CMD_BIND, T_STRINGS, 0, STR_ENS ? 1u : 0u) ||           /* an ENSEMBLE pad or the Eminent */
            command(MD_CMD_BYPASS, T_STRINGS, 0, AMBIENT || set.motion ? 0u : 1u) ||
+           command(MD_CMD_BYPASS, T_LEAD, 0, PH_LEAD ? 0u : 1u) || command(MD_CMD_BYPASS, T_FX, 0, PH_BOX ? 0u : 1u) ||
+           (PH_LEAD && param(T_LEAD, MD_TARGET_INSERT_1 | MD_PHASER_MIX, (int32_t)PH_LEAD * 10)) ||
+           (PH_BOX && param(T_FX, MD_TARGET_INSERT_1 | MD_PHASER_MIX, (int32_t)PH_BOX * 10)) ||
            param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_ALGORITHM, HALLS[set.hall % N_HALLS].kind) ||
            param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_SIZE, HALLS[set.hall % N_HALLS].size) ||
            param(T_STRINGS, MD_TARGET_REVERB | MD_REVERB_DAMPING, HALLS[set.hall % N_HALLS].damping);
@@ -523,12 +578,15 @@ static void factory(uint32_t i)
     set.reverb = f->reverb; set.lead_rev = f->lead_reverb;
     set.ec_div = f->echo; set.ec_fb = f->echo_feedback; set.ec_tone = f->echo_tone; set.ec_str = f->echo_strings; set.ec_lead = f->echo_lead;
     set.motion = f->motion;
+    set.phaser = (uint8_t)((f->lead_phaser > 10u ? 10u : f->lead_phaser) | (f->box_phaser > 10u ? 10u : f->box_phaser) << 4);
 }
 static void sanitize(void)                       /* a record or a bank from flash: in range before it is used */
 {
     if (set.scene > MD_BAND_SCENE_AMBIENT) set.scene = MD_BAND_SCENE_AMBIENT;
     if (set.amb_arp > 1u) set.amb_arp = 1;
     if (set.lead_soft > 3u) set.lead_soft = 1;
+    if (PH_LEAD > 10u) set.phaser = (uint8_t)((set.phaser & 0xf0u) | 10u);
+    if (PH_BOX > 10u) set.phaser = (uint8_t)((set.phaser & 0x0fu) | 0xa0u);
     if (set.lead_soft == 3u && set.lead_sx >= MD_HARMONIC_SOUNDS) set.lead_sx = 0;
     if (set.lead_sx >= MD_SYNTHEX_PATCHES) set.lead_sx = (uint8_t)sx_ring;
     if (set.hall >= N_HALLS) set.hall = AMBIENT ? HALL_AMBIENT : HALL_BAND;
@@ -559,7 +617,6 @@ static void sanitize(void)                       /* a record or a bank from flas
     if (set.bass_seq >= ARP_N_SEQS) set.bass_seq = 1;
     for (uint32_t k = 0; k < ARP_CHAIN; k++) { set.chord[k].root %= 12u; if (set.chord[k].kind >= N_KINDS) set.chord[k].kind = CH_NONE; }
     set.rh_keys &= 0x3ffu;
-    if (set.rh_keys & (set.rh_keys - 1u)) set.rh_keys &= (uint16_t)-set.rh_keys;   /* saved combinations: the lowest key */
 }
 static uint32_t banner_t, banner_on;            /* a setup's banner: its name over the page for two seconds */
 static uint8_t banner_shown = 0xffu;
@@ -569,9 +626,12 @@ static void setup_to(uint32_t i)                 /* another setup: everything se
     i %= N_SETUPS;
     if (i == set.setup) return;
     store.s[set.setup % N_SETUPS] = set;         /* its edits stay, until a power-off unless saved */
+    sq_store.s[set.setup % N_SETUPS] = sq;
     if (running) { band(0); restart = 1; }
     set = store.s[i];
     set.setup = (uint8_t)i;
+    sq = sq_store.s[i];
+    sq_step = sq_slot = 0;
     sanitize();
     set.page = page; set.oct = oct; set.latch = 0;
     fx_own_kept = 0;
@@ -588,13 +648,23 @@ static void scene_to(uint32_t scene)             /* (the stress builds: a scene'
     todo |= G_SCENE | G_BANK | G_TEMPO | G_LEAD_SOUND | G_BASS_SOUND | G_STRINGS | G_DRUMS | G_FX | G_MIX | G_ECHO;
     touch();
 }
-static void save_all(void)                       /* SAVE: this setup's record and all of them in bank 1 */
+static struct { set_t set; seq_t sq; } record;   /* the settings record as it is saved: the settings, then the sequences */
+static void record_save(void)
 {
     set.magic = SET_MAGIC;
-    H->save(&set, sizeof set);
+    record.set = set;
+    record.sq = sq;
+    H->save(&record, sizeof record);
+}
+static void save_all(void)                       /* SAVE: this setup's record, and every setup's in banks 1 and 2 */
+{
+    record_save();
     store.s[set.setup % N_SETUPS] = set;
     store.magic = SETUPS_MAGIC;
     if (HB_HOST_HAS(H, bank_save_n) && H->bank_save_n(1, &store, sizeof store) < 0) H->log("orrery: no bank for the setups");
+    sq_store.s[set.setup % N_SETUPS] = sq;
+    sq_store.magic = SEQS_MAGIC;
+    if (HB_HOST_HAS(H, bank_save_n) && H->bank_save_n(2, &sq_store, sizeof sq_store) < 0) H->log("orrery: no bank for the sequences");
     dirty = 0;
     H->log("orrery: saved");
 }
@@ -647,7 +717,8 @@ static void band(uint32_t on)                   /* bass, chords and drums togeth
     if (on) {
         /* stopped launches select the first link at once; START plays all four tracks from bar 1 */
         if (command(MD_CMD_LAUNCH, T_BASS, 0, 0) || command(MD_CMD_LAUNCH, T_STRINGS, 0, 0) ||
-            command(MD_CMD_LAUNCH, T_FX, 0, 0) || command(MD_CMD_LAUNCH, T_LEAD, 0, 0)) return;
+            command(MD_CMD_LAUNCH, T_FX, 0, 0) ||
+            command(MD_CMD_LAUNCH, T_LEAD, SONG_ON ? (uint8_t)(sq.song[0] - 1u) : 0u, 0)) return;   /* (the song's first sequence) */
         if (!command(MD_CMD_START, 0, 0, 0)) running = 1;
     } else if (!command(MD_CMD_STOP, 0, 0, 0)) running = 0;
 }
@@ -659,6 +730,11 @@ static void schedule_links(void)                /* main loop: the next link as a
     /* each track from its own queued state, so a launch the ring refused for one is retried alone */
     for (k = 0; k < 4u; k++) {
         uint8_t t = TRACKS[k];
+        if (t == T_LEAD && SONG_ON) {            /* the player's song: its next sequence at the bar line it starts on */
+            int to = md_band_song_next(sq.song, sq.div, bar, snap.pattern[t], snap.queued[t]);
+            if (to >= 0) (void)command(MD_CMD_LAUNCH, t, (uint8_t)to, 0);
+            continue;
+        }
         if ((t == T_FX || t == T_LEAD) && !AMBIENT) continue;   /* BAND's box is one pattern, its lead empty */
         int next = md_band_next_link(&chain, bar, snap.pattern[t], snap.queued[t], snap.requested[t]);
         if (next >= 0) (void)command(MD_CMD_LAUNCH, t, (uint8_t)next, 0);
@@ -965,6 +1041,11 @@ static void draw_head(void)
     } else H->text(124, 24, 112, 0, "PRESETS: SETUP", C_GREY, 1);
     H->fill(0, 46, 240, 2, C_DIM);
 }
+static void box(int32_t x, int32_t y, uint16_t col)   /* a step's or a slot's frame, 27 by 18, over its text */
+{
+    H->fill(x, y, 27, 2, col); H->fill(x, y + 16, 27, 2, col);
+    H->fill(x, y, 2, 18, col); H->fill(x + 25, y, 2, 18, col);
+}
 static void draw_body(uint32_t full)
 {
     static const char *const K_STR[4] = {"ATTACK", "RELEASE", "CHORUS", "PHASER"}, *const K_PAD[4] = {"ATTACK", "RELEASE", "DEPTH", "TONE"}, *const K_LEAD[4] = {"CUTOFF", "RESO", "GLIDE", "LEVEL"},
@@ -1033,12 +1114,18 @@ static void draw_body(uint32_t full)
         bar[0] = (uint8_t)((set.tempo - 40u) * 100u / 200u); bar[1] = set.lvl[3]; bar[2] = set.rh_balance; bar[3] = set.rh_extra;
         draw_knobs(K_DRUM, vals, bar, lit);
         for (k = 0; k < 10u; k++) if (set.rh_keys >> k & 1u) { down++; one = k; }
-        if (!down) put_s(line, "NO KEY");
-        else if (down > 1u) { p = put_u(line, down); put_s(p, " KEYS"); }
-        else { const char *nm = mp_rhythm(set.rh_section, one)->name; p = line; while (*nm) { char c = *nm++; *p++ = c >= 'a' && c <= 'z' ? (char)(c - 32) : c; } *p = 0; }
-        p = line; while (*p) p++;
-        p = put_s(p, "   LEVER "); put_s(p, set.rh_section ? "B" : "A");
-        H->text(4, 136, 232, 0, line, C_WHITE, 0);
+        p = line;
+        if (!down) p = put_s(p, "NO KEY");
+        else if (down > 2u) { p = put_u(p, down); p = put_s(p, " RHYTHMS"); }
+        else for (k = 0; k < 10u; k++) if (set.rh_keys >> k & 1u) {   /* one, or two with a + between */
+            const char *nm = mp_rhythm(set.rh_section, k)->name;
+            if (p != line) p = put_s(p, " + ");
+            while (*nm) { char c = *nm++; *p++ = c >= 'a' && c <= 'z' ? (char)(c - 32) : c; }
+            *p = 0;
+        }
+        (void)one;
+        p = put_s(p, down == 2u ? "  " : "   LEVER "); put_s(p, set.rh_section ? "B" : "A");
+        H->text(4, 136, 232, 0, line, C_WHITE, down == 2u);   /* (two names: the small letters) */
         p = put_s(line, "TAMB "); p = put_s(p, set.rh_xmask & 1u ? "ON " : "OFF"); p = put_s(p, "  GUIRO "); p = put_s(p, set.rh_xmask & 2u ? "ON " : "OFF");
         p = put_s(p, "  QUIJ "); put_s(p, set.rh_xmask & 4u ? "ON" : "OFF");
         H->text(4, 158, 232, 0, line, C_GREY, 0);
@@ -1048,8 +1135,8 @@ static void draw_body(uint32_t full)
             if (set.rh_xmask & 2u) put_s(p, "GUIRO 1/4 S");   /* one scrape length, not the machine's three */
             H->text(4, 178, 232, 0, line, C_GREY, 1);
         }
-        H->text(4, 189, 232, 0, "ONE RHYTHM AT A TIME (CPU)", C_GREY, 1);
-        H->text(4, 200, 232, 0, "KEYS RHYTHMS  OCT LEVER  PLAY", C_GREY, 1);
+        H->text(4, 192, 232, 0, "HOLD A KEY, ADD ANOTHER", C_GREY, 1);
+        H->text(4, 206, 232, 0, "KEYS RHYTHMS  OCT LEVER  PLAY", C_GREY, 1);
         break;
     }
     case PG_CHORDS: {
@@ -1078,13 +1165,15 @@ static void draw_body(uint32_t full)
         draw_knobs(K_PARTS, vals, bar, lit);
         p = put_s(line, "FX SPEED "); p = put_i(p, set.fx_speed); put_s(p, "  (SEL)");
         H->text(4, 136, 232, 0, line, C_WHITE, 0);
+        /* (the small lines 14 apart: the host's text paints its own black line, and at 11 each cut the one above) */
         H->text(4, 156, 232, 0, "RISE FALL ARC SPARKLE", C_CREAM, 1);
-        H->text(4, 167, 232, 0, "DROPS UP/DN METAL BUBBLE", C_CREAM, 1);
-        H->text(4, 178, 232, 0, "F# GUST  BLACK ONE-SHOTS", C_CREAM, 1);
+        H->text(4, 170, 232, 0, "DROPS UP/DN METAL BUBBLE", C_CREAM, 1);
+        H->text(4, 184, 232, 0, "F# GUST  BLACK ONE-SHOTS", C_CREAM, 1);
         p = put_s(line, "SEL BG: "); p = put_s(p, set.amb_arp ? set.phrase ? "RUN + " : "FX RUN" : "");
         put_s(p, set.phrase || !set.amb_arp ? PHRASE_NAME[set.phrase % (MD_BAND_PHRASES + 1u)] : "");
-        H->text(4, 189, 232, 0, line, AMBIENT ? C_GREY : C_DIM, 1);
-        H->text(4, 200, 232, 0, "FX AGAIN: FX SEQUENCE", C_GREY, 1);
+        H->text(4, 198, 232, 0, line, AMBIENT ? C_GREY : C_DIM, 1);
+        p = put_s(line, "FX+K3/K4 PHASER L "); p = put_u(p, PH_LEAD); p = put_s(p, " BOX "); put_u(p, PH_BOX);
+        H->text(4, 212, 232, 0, line, PH_LEAD || PH_BOX ? C_WHITE : C_GREY, 1);
         break;
     }
     case PG_FXSEQ: {
@@ -1124,6 +1213,54 @@ static void draw_body(uint32_t full)
         p = put_s(line, "ALGO PATTERN: "); put_s(p, now < 0 ? "YOURS" : FX_PATTERNS[now].name);
         H->text(4, 187, 232, 0, line, C_CREAM, 0);
         H->text(4, 200, 232, 0, set.lvl_fx ? "KEYS SET THE NOTE  SEL SOLO" : "FX BOX LEVEL IS 0 (PARTS)", C_GREY, 1);
+        break;
+    }
+    case PG_STEPS: {
+        static const char *const K_STEPS[4] = {"NOTE", "TIE", "STEP", "SONG"}, *const DIV_NAME[3] = {"1/16", "1/8", "1/4"};
+        const uint8_t *q = sq.step[sq_cur % MD_BAND_SEQS];
+        uint32_t now = q[sq_step % MD_BAND_SEQ_STEPS], d = sq.div[sq_cur % MD_BAND_SEQS] % 3u, playing = seq_playing(0);
+        if (now & 127u) put_key(v[0], now & 127u);
+        else put_s(v[0], "REST");
+        put_s(v[1], now & MD_BAND_SEQ_TIE ? "ON" : "OFF"); put_s(v[2], DIV_NAME[d]); put_s(v[3], sq.on ? "ON" : "OFF");
+        bar[0] = (uint8_t)((now & 127u) * 100u / 127u); bar[1] = now & MD_BAND_SEQ_TIE ? 100 : 0; bar[2] = (uint8_t)(d * 50u); bar[3] = sq.on ? 100 : 0;
+        lit[0] = lit[1] = (now & 127u) != 0; lit[3] = sq.on;
+        draw_knobs(K_STEPS, vals, bar, lit);
+        for (k = 0; k < MD_BAND_SEQ_STEPS; k++) {   /* the sixteen steps, two rows: the cursor's box, the one playing */
+            int32_t x = 4 + (int32_t)(k % 8u) * 29, y = 131 + (int32_t)(k / 8u) * 20;
+            uint32_t s8 = q[k], before = q[(k + MD_BAND_SEQ_STEPS - 1u) % MD_BAND_SEQ_STEPS];
+            char t3[8];
+            if (!(s8 & 127u)) put_s(t3, "-");
+            else if ((s8 & MD_BAND_SEQ_TIE) && (before & 127u) == (s8 & 127u)) put_s(t3, "=");   /* held on */
+            else put_key(t3, s8 & 127u);
+            H->text(x + 2, y + 3, 23, 0, t3, k == playing ? C_ACC : s8 & 127u ? C_WHITE : C_GREY, 1);
+            box(x, y, k == sq_step ? C_BLUE : k == playing ? C_ACC : C_DIM);
+        }
+        p = put_s(line, "SEQUENCE "); *p++ = (char)('A' + sq_cur % MD_BAND_SEQS); p = put_s(p, "   STEP "); put_u(p, sq_step + 1u);
+        H->text(4, 174, 232, 0, line, C_WHITE, 1);
+        H->text(4, 190, 232, 0, "KEYS A NOTE   ARP A REST", C_CREAM, 1);
+        H->text(4, 206, 232, 0, "ALGO A-D   SELECT THE STEP", C_GREY, 1);
+        break;
+    }
+    case PG_SONG: {
+        static const char *const K_SONG[4] = {"SEQ", "", "", "SONG"};
+        uint32_t slot = 0, n = 0, bars = 0, now = sq.song[sq_slot % MD_BAND_SONG_SLOTS];
+        (void)seq_playing(&slot);
+        while (n < MD_BAND_SONG_SLOTS && sq.song[n] >= 1u && sq.song[n] <= MD_BAND_SEQS) bars += md_band_seq_bars(sq.div[sq.song[n++] - 1u]);
+        if (now) { v[0][0] = (char)('A' + now - 1u); v[0][1] = 0; } else put_s(v[0], "END");
+        v[1][0] = v[2][0] = 0; put_s(v[3], sq.on ? "ON" : "OFF");
+        bar[0] = (uint8_t)(now * 25u); bar[3] = sq.on ? 100 : 0; lit[1] = lit[2] = 0; lit[3] = sq.on;
+        draw_knobs(K_SONG, vals, bar, lit);
+        for (k = 0; k < MD_BAND_SONG_SLOTS; k++) {   /* the slots: what is past the end is grey */
+            int32_t x = 4 + (int32_t)(k % 8u) * 29, y = 131 + (int32_t)(k / 8u) * 20;
+            char t3[4] = {0, 0, 0, 0};
+            t3[0] = sq.song[k] ? (char)('A' + sq.song[k] - 1u) : '-';
+            H->text(x + 2, y + 3, 23, 0, t3, k == slot ? C_ACC : k < n ? C_WHITE : C_GREY, 1);
+            box(x, y, k == sq_slot ? C_BLUE : k == slot ? C_ACC : C_DIM);
+        }
+        p = put_s(line, "SLOT "); p = put_u(p, sq_slot + 1u); p = put_s(p, "   THE SONG: "); p = put_u(p, bars); put_s(p, bars == 1u ? " BAR" : " BARS");
+        H->text(4, 174, 232, 0, line, C_WHITE, 1);
+        H->text(4, 190, 232, 0, "SELECT A SLOT   KNOB1 A-D", C_CREAM, 1);
+        H->text(4, 206, 232, 0, "THE FIRST - IS ITS END", C_GREY, 1);
         break;
     }
     case PG_MIX:
@@ -1216,6 +1353,15 @@ static void fx_gestures(void)                    /* main loop: the gesture on th
         break;                                   /* (the first in the list has the eighth) */
     }
 }
+static uint32_t seq_hash(void)                   /* STEPS and SONG: the sequences, the cursors, what plays */
+{
+    const uint8_t *b = (const uint8_t *)&sq;
+    uint32_t i, h = 0, slot = 0, step;
+    if (set.page != PG_STEPS && set.page != PG_SONG) return (uint32_t)sq.on * 40503u;
+    for (i = 0; i < sizeof sq; i++) h = (h ^ b[i]) * 16777619u;
+    step = seq_playing(&slot);
+    return h + sq_cur * 101u + sq_step * 1009u + sq_slot * 10007u + step * 3u + slot * 5u;
+}
 static uint32_t state_hash(void)
 {
     const uint8_t *b = (const uint8_t *)&set;
@@ -1223,7 +1369,7 @@ static uint32_t state_hash(void)
     for (i = 0; i < sizeof set; i++) h = (h ^ b[i]) * 16777619u;
     return (h ^ (cur_link + 1u) << 24 ^ playing_chord() << 16 ^ running << 23 ^ (snap.meters.clipped != 0) << 22 ^ room_forced << 21)
            + solo_track * 7919u + (uint32_t)sweep_cut * 31u + (uint32_t)sweep_res * 131u
-           + (set.page == PG_FXSEQ ? fx_cur * 977u + fx_bar() * 613u : 0u);
+           + (set.page == PG_FXSEQ ? fx_cur * 977u + fx_bar() * 613u : 0u) + seq_hash();
 }
 static void draw_banner(void)                   /* the setup just chosen, over the page */
 {
@@ -1274,8 +1420,7 @@ static void draw(uint32_t full)
     H->led(HB_BTN_SEL, solo_track != 0xffu);
     H->led(HB_BTN_FX, set.page == PG_MIX || set.page == PG_ECHO || set.page == PG_PARTS || set.page == PG_FXSEQ);
     if (dirty && H->ms() - t_save > 2000u) {
-        set.magic = SET_MAGIC;
-        H->save(&set, sizeof set);
+        record_save();
         dirty = 0;
     }
 }
@@ -1299,6 +1444,7 @@ static uint8_t page_part(void)
     case PG_DRUMS: return T_DRUMS;
     case PG_LEAD: return T_LEAD;
     case PG_FXSEQ: return T_FX;
+    case PG_STEPS: case PG_SONG: return T_LEAD;
     default: return 0xffu;
     }
 }
@@ -1364,9 +1510,15 @@ static void key_down(uint32_t k, int32_t vel)
     uint32_t note = 29u + k + 12u * set.oct;     /* octave 0: the lowest key F1, 6: F7 */
     if (k >= 27u) return;
     if (set.page == PG_DRUMS) {                 /* the rhythm keys */
-        /* one rhythm at a time: combined keys exceed the audio budget (work/evidence/audio-budget.md);
-         * a key selects its rhythm, the lit key again clears it */
-        if (WHITE[k] >= 0) set.rh_keys = set.rh_keys == (1u << WHITE[k]) ? 0u : (uint16_t)(1u << WHITE[k]);
+        /* a key by itself is its rhythm (the lit one again: none). With another rhythm key held down, the two play
+         * together, and more the same way: their hits on the one machine's voices, one pattern (band.c drums()),
+         * as its keys latched side by side. Not a second machine: what it costs is the hits (audio-budget.md) */
+        if (WHITE[k] >= 0) {
+            uint16_t bit = (uint16_t)(1u << WHITE[k]);
+            if (rh_held) set.rh_keys = (uint16_t)(set.rh_keys | rh_held | bit);
+            else set.rh_keys = set.rh_keys == bit ? 0u : bit;
+            rh_held |= bit;
+        }
         else if (k == 1u) set.rh_xmask ^= 1u;
         else if (k == 3u) set.rh_xmask ^= 2u;
         else if (k == 5u) set.rh_xmask ^= 4u;
@@ -1390,7 +1542,8 @@ static void key_down(uint32_t k, int32_t vel)
         todo |= G_BANK; touch();
         return;
     }
-    if (set.latch) {                            /* the chord under the cursor: this key's note, a minor chord if none */
+    if (set.page == PG_STEPS) seq_write(note ? note : 1u);   /* step entry: written, and heard (the lead plays it below) */
+    else if (set.latch) {                       /* the chord under the cursor: this key's note, a minor chord if none */
         chord_t *c = &set.chord[set.cursor];
         c->root = (uint8_t)(note % 12u);
         if (c->kind == CH_NONE) c->kind = CH_MIN;
@@ -1413,9 +1566,45 @@ static void key_up(uint32_t k)
 {
     /* the token and part from key-down, whatever the page now; a refused off becomes a source flush */
     if (k == 1u && gust_key) { gust_key = 0; wind_gust = 0; }
+    if (k < 27u && WHITE[k] >= 0) rh_held &= (uint16_t)~(1u << WHITE[k]);
     if (k < 27u) run_key_up(&key_token[k]);
     if (k < 27u && key_token[k]) (void)md_session_note_off(&S, key_track[k], MD_SOURCE_PANEL, key_token[k]);
     if (k < 27u) key_token[k] = 0;
+}
+/* STEPS and SONG */
+static char *put_key(char *p, uint32_t key)
+{
+    p = put_s(p, NOTE_NAME[key % 12u]);
+    return key < 12u ? put_s(p, "-1") : put_u(p, key / 12u - 1u);
+}
+static void seq_write(uint32_t key)              /* a note (0: a rest) at the cursor, and on to the next step */
+{
+    sq.step[sq_cur % MD_BAND_SEQS][sq_step % MD_BAND_SEQ_STEPS] = (uint8_t)(key > 127u ? 127u : key);
+    if (key) sq_last = (uint8_t)(key > 127u ? 127u : key);
+    sq_step = (uint8_t)((sq_step + 1u) % MD_BAND_SEQ_STEPS);
+    todo |= G_BANK;
+    touch();
+}
+static void song_switch(uint32_t on)             /* on with no song yet: the sequence in hand, round */
+{
+    sq.on = (uint8_t)(on != 0);
+    if (on && !(sq.song[0] >= 1u && sq.song[0] <= MD_BAND_SEQS)) sq.song[0] = (uint8_t)(sq_cur % MD_BAND_SEQS + 1u);
+}
+static void song_slot(int32_t d) { sq.song[sq_slot % MD_BAND_SONG_SLOTS] = clamp8((int32_t)sq.song[sq_slot % MD_BAND_SONG_SLOTS] + d, 0, MD_BAND_SEQS); }
+/* the step playing of the sequence on the STEPS page (16: not this one, or stopped), and the song's slot playing */
+static uint32_t seq_playing(uint32_t *slot_out)
+{
+    uint32_t slot = 0, into = 0, quarters, d;
+    int now;
+    if (slot_out) *slot_out = MD_BAND_SONG_SLOTS;
+    if (!snap.running || !SONG_ON) return MD_BAND_SEQ_STEPS;
+    now = md_band_song_at(sq.song, sq.div, snap.position.quarter / 4u, &slot, &into);
+    if (now < 0) return MD_BAND_SEQ_STEPS;
+    if (slot_out) *slot_out = slot;
+    if ((uint32_t)now != sq_cur) return MD_BAND_SEQ_STEPS;
+    quarters = into * 4u + snap.position.quarter % 4u;
+    d = sq.div[now] % 3u;
+    return (d == 0u ? quarters * 4u + snap.position.unit / 2400u : d == 1u ? quarters * 2u + snap.position.unit / 4800u : quarters) % MD_BAND_SEQ_STEPS;
 }
 static void knob(uint32_t k, int32_t d)         /* KNOB1..4 on the page */
 {
@@ -1424,6 +1613,16 @@ static void knob(uint32_t k, int32_t d)         /* KNOB1..4 on the page */
         else { sweep_res += 4 * d; sweep_res = sweep_res < 0 ? 0 : sweep_res > 100 ? 100 : sweep_res; }
         fx_used = 1;
         sweep_send();
+        return;
+    }
+    if (fx_held) {                               /* FX held: KNOB3 the lead's phaser, KNOB4 the effects box's (0 off .. 10) */
+        uint32_t lead = PH_LEAD, box = PH_BOX;
+        if (k == 2) lead = clamp8((int32_t)lead + d, 0, 10);
+        else box = clamp8((int32_t)box + d, 0, 10);
+        set.phaser = (uint8_t)(lead | box << 4);
+        fx_used = 1;
+        todo |= G_SCENE;
+        touch();
         return;
     }
     switch (set.page) {
@@ -1491,6 +1690,26 @@ static void knob(uint32_t k, int32_t d)         /* KNOB1..4 on the page */
         todo |= G_BANK;
         break;
     }
+    case PG_STEPS: {
+        uint8_t *v = &sq.step[sq_cur % MD_BAND_SEQS][sq_step % MD_BAND_SEQ_STEPS];
+        if (k == 0) {                            /* NOTE: a semitone a click; from a rest, the last key written */
+            int32_t key = *v & 127u ? (int32_t)(*v & 127u) + d : (int32_t)sq_last;
+            key = key < 1 ? 1 : key > 127 ? 127 : key;
+            *v = (uint8_t)((uint32_t)key | (*v & MD_BAND_SEQ_TIE));
+            sq_last = (uint8_t)key;
+        }
+        else if (k == 1) { if (*v & 127u) *v = (uint8_t)(d > 0 ? *v | MD_BAND_SEQ_TIE : *v & 127u); }
+        else if (k == 2) sq.div[sq_cur % MD_BAND_SEQS] = clamp8((int32_t)sq.div[sq_cur % MD_BAND_SEQS] + d, 0, 2);
+        else song_switch(d > 0);
+        todo |= G_BANK;
+        break;
+    }
+    case PG_SONG:
+        if (k == 0) song_slot(d);
+        else if (k == 3) song_switch(d > 0);
+        else return;
+        todo |= G_BANK;
+        break;
     default:
         if (k == 0) set.ec_fb = clamp8(set.ec_fb + 5 * d, 0, 100);
         else if (k == 1) set.ec_tone = clamp8(set.ec_tone + 5 * d, 0, 100);
@@ -1523,6 +1742,8 @@ static void algo(int32_t d)                     /* ALGORITHM on the page */
     case PG_MIX: set.reverb = clamp8(set.reverb + 5 * d, 0, 100); todo |= G_MIX; break;
     case PG_PARTS: set.lead_rev = clamp8(set.lead_rev + 5 * d, 0, 100); todo |= G_MIX; break;
     case PG_FXSEQ: fx_pattern_to(d); break;
+    case PG_STEPS: sq_cur = clamp8((int32_t)sq_cur + d, 0, MD_BAND_SEQS - 1); break;   /* the sequence, A..D */
+    case PG_SONG: song_slot(d); todo |= G_BANK; break;
     default: set.ec_div = clamp8((int32_t)set.ec_div + d, 0, 6); todo |= G_ECHO; break;
     }
     touch();
@@ -1539,7 +1760,7 @@ static void ui(uint32_t ev, int32_t arg)
         case HB_BTN_GLO: page_to(PG_LEAD); break;
         case HB_BTN_ENV: page_to(PG_BASS); break;
         case HB_BTN_LFO: page_to(PG_DRUMS); break;
-        case HB_BTN_SEQ: page_to(PG_CHORDS); break;
+        case HB_BTN_SEQ: page_to(set.page == PG_CHORDS ? PG_STEPS : set.page == PG_STEPS ? PG_SONG : PG_CHORDS); break;   /* round */
         case HB_BTN_FX: fx_held = 1; fx_used = 0; break;   /* the page changes on release, if no knob was turned */
         case HB_BTN_SEL:
             if (set.page == PG_PARTS) {          /* the background parts round: none, the box's run, the lead's phrase, both */
@@ -1559,7 +1780,8 @@ static void ui(uint32_t ev, int32_t arg)
                 todo |= G_BANK;                  /* (ONCE is in the pattern, the others are not) */
                 fx_audition();
                 touch();
-            } else notes_off();
+            } else if (set.page == PG_STEPS) seq_write(0);   /* a rest, and on */
+            else notes_off();
             break;
         case HB_BTN_SAVE: save_all(); break;
         case HB_BTN_OCT_DOWN:
@@ -1590,6 +1812,8 @@ static void ui(uint32_t ev, int32_t arg)
             return;
         case HB_ENC_SELECT:
             if (set.page == PG_CHORDS) algo(arg);
+            else if (set.page == PG_STEPS) { sq_step = (uint8_t)((((int32_t)sq_step + arg) % 16 + 16) % 16); touch(); }
+            else if (set.page == PG_SONG) { sq_slot = clamp8((int32_t)sq_slot + arg, 0, MD_BAND_SONG_SLOTS - 1); touch(); }
             else if (set.page == PG_LEAD) { set.run = clamp8((int32_t)set.run + arg, 0, N_RUNS - 1); touch(); }
             else if (set.page == PG_BASS && !AMBIENT && arg) {   /* the 1601 sequence (no sequences in AMBIENT) */
                 set.bass_seq = clamp8((int32_t)set.bass_seq + arg, 0, ARP_N_SEQS - 1); set.bass_sweep = 255;
@@ -1724,11 +1948,27 @@ static int init(const hb_host_t *h)
         }
     }
     for (k = 0; k < N_SETUPS; k++) { set = store.s[k]; set.setup = (uint8_t)k; sanitize(); store.s[k] = set; }
-    if (H->load(&set, sizeof set) || set.magic != SET_MAGIC) {
-        set = store.s[0];                        /* DRIFT, on the LEAD page: the keys play over it */
-        set.page = PG_LEAD;
+    if (HB_HOST_HAS(H, bank_load_n)) {           /* every setup's sequences, if SAVE kept them (fewer setups: as bank 1) */
+        int got = H->bank_load_n(2, &sq_store, sizeof sq_store);
+        if (!(got >= (int)(4u + sizeof(seq_t)) && got <= (int)sizeof sq_store && ((uint32_t)got - 4u) % sizeof(seq_t) == 0u &&
+              sq_store.magic == SEQS_MAGIC))
+            for (k = 0; k < sizeof sq_store; k++) ((uint8_t *)&sq_store)[k] = 0;
     }
-    sanitize();
+    for (k = 0; k < N_SETUPS; k++) seq_sanitize(&sq_store.s[k]);
+    {
+        /* the record: settings and sequences (240 bytes); or 0.1.0's, the settings alone (the host gives a record
+         * only at the length it was saved with) */
+        uint32_t with = !H->load(&record, sizeof record) && record.set.magic == SET_MAGIC;
+        if (with) set = record.set;
+        else if (H->load(&set, sizeof set) || set.magic != SET_MAGIC) {
+            set = store.s[0];                    /* DRIFT, on the LEAD page: the keys play over it */
+            set.page = PG_LEAD;
+        }
+        sanitize();
+        sq = with ? record.sq : sq_store.s[set.setup % N_SETUPS];
+        seq_sanitize(&sq);
+        sq_store.s[set.setup % N_SETUPS] = sq;
+    }
     store.s[set.setup] = set;                    /* the record is the newest of its setup */
 #ifdef MD_STRESS_HOOK
     MD_STRESS_HOOK(3, 0);                        /* tests/stress only: the case's scene, before anything is built */
@@ -1742,6 +1982,8 @@ static int init(const hb_host_t *h)
         md_effect_init(&reverb_fx, &MD_FX_REVERB, &reverb_state, sizeof reverb_state, MD_SAMPLE_RATE) ||
         md_effect_init(&master_fx, &MD_FX_FILTER, &master_state, sizeof master_state, MD_SAMPLE_RATE) ||
         md_effect_init(&warm_fx, &MD_FX_FILTER, &warm_state, sizeof warm_state, MD_SAMPLE_RATE) ||
+        md_effect_init(&lead_ph_fx, &MD_FX_PHASER, &lead_ph_state, sizeof lead_ph_state, MD_SAMPLE_RATE) ||
+        md_effect_init(&box_ph_fx, &MD_FX_PHASER, &box_ph_state, sizeof box_ph_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&inst[T_FX], &MD_ELECTRONIC_FX, &fx_state, sizeof fx_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&sx, &MD_SYNTHEX, &sx_state, sizeof sx_state, MD_SAMPLE_RATE) ||
         md_instrument_init(&hm, &MD_HARMONIC, &hm_state, sizeof hm_state, MD_SAMPLE_RATE) ||
@@ -1755,7 +1997,13 @@ static int init(const hb_host_t *h)
         md_effect_param(&reverb_fx, MD_REVERB_ALGORITHM, MD_REVERB_HALL) || md_effect_param(&reverb_fx, MD_REVERB_SIZE, 70) ||
         md_effect_param(&reverb_fx, MD_REVERB_DAMPING, 50) ||
         /* the strings' warming filter: a gentle low-pass near 3.5 kHz (AMBIENT; bypassed in BAND) */
-        md_effect_param(&warm_fx, MD_FILTER_CUTOFF, 745) || md_effect_param(&warm_fx, MD_FILTER_RESONANCE, 10)) return 1;
+        md_effect_param(&warm_fx, MD_FILTER_CUTOFF, 745) || md_effect_param(&warm_fx, MD_FILTER_RESONANCE, 10) ||
+        /* the two phasers: slow, deep, with the feedback that gives the sweep its voice; not at the strings' rate,
+         * so the three do not turn together. FX + KNOB3 / KNOB4 is how much of each is heard */
+        md_effect_param(&lead_ph_fx, MD_PHASER_RATE, 37) || md_effect_param(&lead_ph_fx, MD_PHASER_DEPTH, 80) ||
+        md_effect_param(&lead_ph_fx, MD_PHASER_FEEDBACK, 55) || md_effect_param(&lead_ph_fx, MD_PHASER_MIX, 0) ||
+        md_effect_param(&box_ph_fx, MD_PHASER_RATE, 21) || md_effect_param(&box_ph_fx, MD_PHASER_DEPTH, 85) ||
+        md_effect_param(&box_ph_fx, MD_PHASER_FEEDBACK, 60) || md_effect_param(&box_ph_fx, MD_PHASER_MIX, 0)) return 1;
     band_settings(&b);
     if (md_band_build(&b, &first_bank, &chain, &report)) return 1;
     for (k = 0; k < MD_TRACKS; k++) c.instrument[k] = &inst[k];
@@ -1763,6 +2011,8 @@ static int init(const hb_host_t *h)
     c.bus[MD_MIX_BUS_REVERB] = &reverb_fx;
     c.master = &master_fx;                       /* the master sweep: bypassed until a page asks for it */
     c.insert[T_STRINGS][0] = &warm_fx;
+    c.insert[T_LEAD][0] = &lead_ph_fx;
+    c.insert[T_FX][0] = &box_ph_fx;
     c.alternate[T_LEAD] = &sx;
     c.third[T_LEAD] = &hm;
     c.alternate[T_STRINGS] = &ens;

@@ -96,7 +96,7 @@ def main():
     ap.add_argument("--harbor", type=Path, default=ROOT.parent / "fm1-harbor-proc")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--script", default="")
-    ap.add_argument("--count", type=int, default=18, help="how many setups there are, when none is named")
+    ap.add_argument("--count", type=int, default=19, help="how many setups there are, when none is named")
     a = ap.parse_args()
     build(a.harbor)
     OUT.mkdir(parents=True, exist_ok=True)

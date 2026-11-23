@@ -582,3 +582,88 @@ Synthesizer) and "arp and eminent we do have". Since the last entry the tree was
   LASER with the Synthex 50.7). The existing setups render as before (DAWN's parts to a tenth of a dB). Not done:
   the one-core timing build, the device, and whether the SMK-37's image still has room for the larger module.
 
+2026-11-22, later: phasers and an organ. The owner: "I also want to make sure to have all effects of oxygene in this -
+so that we really can do Jarre music?" The harmonic voice went in as PR 1 (merged, 1cc828e) first. Against what the
+record used (Wikipedia, Sound On Sound, MusicRadar): the Eminent, 2600, Mini Pops (two rhythms at once), RMI and the
+VCS 3's part are here; there was a phaser only on the strings, no organ, no Mellotron, and no sequencer for one's own
+melodies (the M4 tasks). The first two, on branch phaser-organ (not committed):
+- Two phasers (effects/phaser.c as it was), inserts on the lead and on the effects box, idle at 0. FX held, KNOB3 /
+  KNOB4: 0 .. 10, the mix in tenths; rates 0.37 and 0.21 Hz, depth 80 / 85, feedback 55 / 60. Stored in set.phaser,
+  the byte that was padding at offset 23 (base_defaults clears the record whole, so 0.1.0's records have 0 there:
+  the layout and the magics stay). The PARTS page's last line shows both.
+- COMBO ORGAN, the harmonic voice's ninth sound (lead 99 of 99): a reedy eight-foot, a four-foot locked an octave
+  over it (no detune), on and off at once, and a vibrato (6.3 Hz, 14 cents each way) on the generators' steps at
+  the control tick: a sound has vib_rate / vib_depth now, 0 for the other eight, which render as before. Level 50
+  puts a held key where SOFT LEAD's is (76.7 dB at 100).
+- Setup 19 VESPER (E flat major, 58: the full Eminent, the organ's long tones through the lead's phaser, SPACE through
+  the box's, a plate). DRIFT's box and PRISM's lead and box go through their phasers too (box levels up 6 for what
+  the notches take).
+- Checked: 17 native suites; module.dock crc eed4d145, code 181976 B, bss 270660 of 278528; orrery_emu.py passes;
+  DRIFT 49.9 % worst (46.6 before: its box's phaser), MAGNET 55.7 (as before: an idle insert costs nothing), PRISM
+  47.3, VESPER 47.3, a minute each with six keys held, no overrun. FX + KNOB3 / KNOB4 driven in render_setups: the
+  line reads L 4 BOX 10, and a held organ key loses 3 dB of RMS at phaser 8 (its notches).
+- All nineteen setups a minute each in fm1-emu with six lead keys held: no overrun, worst block 47.3 .. 56.0 %
+  (fourteen of them 47.3: one block they share, 41 .. 43 before this build; the band setups 55.7 .. 56.0 as before).
+
+2026-11-22, the manual. The owner, after hearing it in fm1-live: "sounds nice! A bit hard to guess how to edit all
+sounds and effects - we need a proper manual". MANUAL.md: start, the panel, a table of "I want to change ... / go to
+/ turn", each page with its picture and its controls, saving, MIDI and the pads, the lists (the hundred lead sounds by
+number, the rhythms by key and lever), and what it cannot do. Its pictures are the module's screen from fm1-emu
+(tools/manual_shots.py -> docs/manual/). Written from the panel's code, which did not agree with the README in three
+places (README corrected): one rhythm at a time, not combined keys (key_down: the audio budget); the bass's SWEEP knob
+does nothing; the strings' COLOR is not on the panel (the page's FX COLOR hint is left over). Not shown on a screen:
+the lead's reverb (ALGORITHM on PARTS). Seen on the way: the Synthex's factory names on the LEAD page carry people's
+and makers' names (Hammond 1 (John Lord), Mini Moog Lead ...), against the naming rule in setups.h.
+- The owner, on the manual's "one rhythm at a time": "the cost of two drum sequences is easy it is just about both
+  keys are hold => both drums seqs playing - not two full minipop". Right: drums() merges the keys' hits into one
+  pattern for the one machine, and the rule dated from the one-core budget. Measured now (audio-budget.md's new
+  section): one key 55.8 %, two 55.9, four with the extras 55.5, eight with the extras 60.1, on MAGNET. The DRUMS
+  page: a key alone selects, a key pressed with another held adds (rh_held); two names shown with a + between;
+  sanitize keeps a saved combination.
+- Seen in the manual's pictures and put right: the small help lines on PARTS and DRUMS were 11 apart and each cut
+  the one above (the host's text paints its own black line): 14 apart now.
+
+2026-11-22, the step sequencer and the song. The owner: "can you add a step sequencer then? and a way to create a
+"song" of a few sequences? ... it should be easy!" Built on what was there, not on M4's project model:
+- band.h / band.c: the player's sequences are the lead track's four patterns (lead_song: sixteen steps each, a step
+  a byte: the key, 0 a rest, bit 7 tied to the step before: the same key held on, another slid to; its step 1/16,
+  1/8 or 1/4, so a sequence is one, two or four bars). The song: sixteen slots, each a sequence played through
+  (md_band_song_at / md_band_song_next: the module queues the lead's next pattern as a next-bar launch, as the links
+  are). In AMBIENT the song takes the phrase's place.
+- orrery.c: seq_t (88 bytes) a setup. The setup in hand is saved with the settings: the record is {set_t, seq_t},
+  exactly the 240 bytes a record may be; 0.1.0's 152-byte record still loads (the host gives a record only at the
+  length it was saved with, so both are tried). Every setup's on SAVE in bank 2 (SEQS_MAGIC RRS1, 1676 bytes).
+  Pages STEPS and SONG, SEQ round. STEPS: the keys write and move on (and sound), ARP a rest, SELECT the step,
+  ALGORITHM A..D, KNOB1 note, KNOB2 tie, KNOB3 step length, KNOB4 the song on (on with no song: the sequence in
+  hand). SONG: SELECT the slot, KNOB1 its sequence, the first "-" the end. The step and the slot playing are lit.
+- Checked: band_test own_sequences (the patterns, the song over forty bars as the module schedules it); in
+  render_setups, seven notes written with the keys and read back from the lead's audio in time; the record, the
+  bank and a 0.1.0 record with the bank each bring the sequences back (render_setups takes ORRERY_RECORD and
+  ORRERY_SEQS now). In fm1-emu with a sixteen-step sequence playing under six held keys, a minute each: MAGNET
+  55.5 %, PULSE 55.9 %, PRISM 47.3 %, no overrun: as without it. module.dock crc 2457ddbc, code 186432 B, bss 272660
+  of 278528 (5.9 KiB left). No factory sequences: every setup's are empty.
+- Limits, in the manual: one sequenced part (the lead's sound); absolute notes (they do not follow the chords); no
+  recording; a change of setup still restarts the band.
+
+
+2026-11-23, the Synthex without its reverb's RAM. The owner asked why the module's RAM was nearly gone (5.9 KiB
+left), then: "but there was no reverb in the original synthex?" and "do that and build with no reverb".
+- Where it went (the symbol table of crc 2457ddbc): the Synthex's state 81.7 KiB, 64.1 of it the engine's reverb
+  lines, which the adapter switches off in every patch; the session 70.2; the echo 24.1; the Synthex's lane 20.0;
+  the session's reverb 19.1. The original has no reverb: the engine's is the app's (fx/reverb.ts), on in eleven of
+  the forty added memories (40..79), in none of the forty factory panel records.
+- `./take.py --scintilla-ref origin/main` (dock b3180ee): six engines/sc_* files; the other engines compared equal.
+  This engine has SC_HOST_REVERB (synthex_config.h has set it since the first take). With it came dock's corrected
+  decoding of the factory panel records (cutoff and key tracking, the LFO's depths, the filter's sustain, three
+  presets against the recording), the layer's LFO as one (sync on a first key, silent voices advance), and the
+  oscillators' AC coupling.
+- What that did to the sounds, a held G4 at level 40 through the adapter, both engines (scratch sxcmp/): the forty
+  memories within 0.4 dB held; the panel records mostly within 1 dB. The laser harp (Ring mod.) came 2.1 dB down:
+  its level 40 -> 51. Three moved more than 3 dB and are put back by level: Electric piano II (+5.6: 21), Whistle
+  (-3.3: 58), Clavichord I (-4.5, and it falls away now: 67). Left as they are, about 2 dB: Metallic, Church organ,
+  Electronic organ, Take-off, Clavichord II; Landing's first half second (-5.4, its sweep). The setups' Synthex
+  sounds: Filtered brass +0.1, Vibes +0.4, Chimes -0.8, Pan flutes 0.0.
+- module.dock crc 6081af3e: code 185956 B, bss 206132 of 278528 (70.7 KiB left; it was 5.9). 17 native suites,
+  orrery_emu.py all passed (worst 55.6 %). All nineteen setups a minute each in fm1-emu, six lead keys held: no
+  overrun, worst block 47.3 .. 56.0 %, as before. build/listen/scenes rendered again. Not heard, not on a device.
+- Not done, small now: first_bank (7.9 KiB, used only at start) and init's second copy of the setups (2.8 KiB).

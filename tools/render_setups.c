@@ -9,7 +9,9 @@
  * alone (the others muted with the SMK-37's mute pads). SCRIPT: "ms:event,..." before PLAY at 500 ms and after:
  * bN / bN^ a button down / up, eN:clicks an encoder, kN / kN^ a note key, mHHHHHH a MIDI message (hex). Without one
  * the setup just plays. Prints the peak and the RMS; the screen's text goes to stderr with -v as the last argument.
- * ORRERY_BANK=file gives the module that file as its saved setups, ORRERY_BANK_OUT=file takes what SAVE writes.
+ * ORRERY_BANK=file gives the module that file as its saved setups, ORRERY_BANK_OUT=file takes what SAVE writes;
+ * ORRERY_SEQS / ORRERY_SEQS_OUT the same for the sequences' bank, ORRERY_RECORD / ORRERY_RECORD_OUT for the settings
+ * record (written two seconds after a change).
  * Build and run: tools/listen.py (which also measures the parts against each other). */
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,15 +36,34 @@ static void h_text(int32_t x, int32_t y, int32_t w, uint32_t big, const char *s,
 }
 static void h_led(uint32_t id, uint32_t on) { (void)id; (void)on; }
 static uint32_t h_rand(void) { static uint32_t r = 1; r = r * 1664525u + 1013904223u; return r; }
-static int h_load(void *p, uint32_t n) { (void)p; (void)n; return 1; }
-static void h_save(const void *p, uint32_t n) { (void)p; (void)n; }
+/* the settings record: none, unless ORRERY_RECORD names a file (given only at the length it was saved with, as the
+ * dock does); a save goes to ORRERY_RECORD_OUT when that is set */
+static int h_load(void *p, uint32_t n)
+{
+    const char *name = getenv("ORRERY_RECORD");
+    static uint8_t rec[240];
+    FILE *f = name ? fopen(name, "rb") : 0;
+    size_t got;
+    if (!f) return 1;
+    got = fread(rec, 1, sizeof rec, f);
+    fclose(f);
+    if (got != n) return 1;
+    memcpy(p, rec, n);
+    return 0;
+}
+static void h_save(const void *p, uint32_t n)
+{
+    const char *name = getenv("ORRERY_RECORD_OUT");
+    FILE *f = name ? fopen(name, "wb") : 0;
+    if (f) { fwrite(p, 1, n, f); fclose(f); }
+}
 /* the setups' bank: none, unless ORRERY_BANK names a file (read as the dock does: its length, or -1 when it is longer
  * than asked for); a save goes to ORRERY_BANK_OUT when that is set */
 static int h_bank_load_n(uint32_t i, void *p, uint32_t n)
 {
-    const char *name = getenv("ORRERY_BANK");
+    const char *name = getenv(i == 1u ? "ORRERY_BANK" : "ORRERY_SEQS");
     static uint8_t bank[8176];
-    FILE *f = name && i == 1u ? fopen(name, "rb") : 0;
+    FILE *f = name && (i == 1u || i == 2u) ? fopen(name, "rb") : 0;
     size_t got;
     if (!f) return -1;
     got = fread(bank, 1, sizeof bank, f);
@@ -53,8 +74,8 @@ static int h_bank_load_n(uint32_t i, void *p, uint32_t n)
 }
 static int h_bank_save_n(uint32_t i, const void *p, uint32_t n)
 {
-    const char *name = getenv("ORRERY_BANK_OUT");
-    FILE *f = name && i == 1u ? fopen(name, "wb") : 0;
+    const char *name = getenv(i == 1u ? "ORRERY_BANK_OUT" : "ORRERY_SEQS_OUT");
+    FILE *f = name && (i == 1u || i == 2u) ? fopen(name, "wb") : 0;
     if (f) { fwrite(p, 1, n, f); fclose(f); }
     return (int)n;
 }

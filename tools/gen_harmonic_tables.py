@@ -15,32 +15,37 @@ CTL = 16                    # the envelopes move every 16 samples
 SIZES = (256, 128, 64)      # the wave at 16, 8 and 4 harmonics
 
 # name, A's harmonics, B's harmonics, B's level against A (percent), B's place (semitones over A, then cents),
-# then for A and for B: attack ms, decay ms (to a thousandth of the way), sustain percent, release ms
+# then for A and for B: attack ms, decay ms (to a thousandth of the way), sustain percent, release ms; then the
+# vibrato: Hz and cents each way (0: none)
 SOUNDS = [
     # a pluck: a round body that stays a little, a bright top that is gone in a tenth of a second
     ("HARMONIC PLUCK", [15, 9, 11, 5, 6, 2, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-     [0, 0, 6, 10, 8, 12, 9, 10, 7, 8, 5, 6, 3, 4, 2, 2], 70, 0, 4, (2, 900, 12, 260), (1, 160, 0, 120)),
+     [0, 0, 6, 10, 8, 12, 9, 10, 7, 8, 5, 6, 3, 4, 2, 2], 70, 0, 4, (2, 900, 12, 260), (1, 160, 0, 120), (0, 0)),
     # the odd harmonics only: hollow, a reed's pluck
     ("HOLLOW PLUCK", [15, 0, 9, 0, 6, 0, 4, 0, 3, 0, 2, 0, 1, 0, 1, 0],
-     [0, 0, 8, 0, 10, 0, 9, 0, 7, 0, 5, 0, 3, 0, 2, 0], 55, 0, -5, (2, 700, 18, 220), (1, 220, 0, 120)),
+     [0, 0, 8, 0, 10, 0, 9, 0, 7, 0, 5, 0, 3, 0, 2, 0], 55, 0, -5, (2, 700, 18, 220), (1, 220, 0, 120), (0, 0)),
     # struck glass: the octaves, and a second set a few cents off that beats against them; no sustain
     ("GLASS BELLS", [15, 0, 0, 9, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 3],
-     [10, 0, 7, 0, 0, 8, 0, 0, 6, 0, 0, 4, 0, 0, 0, 0], 60, 12, 7, (1, 2600, 0, 900), (1, 1100, 0, 500)),
+     [10, 0, 7, 0, 0, 8, 0, 0, 6, 0, 0, 4, 0, 0, 0, 0], 60, 12, 7, (1, 2600, 0, 900), (1, 1100, 0, 500), (0, 0)),
     # an organ: octaves in one generator, the fifths over them in the other
     ("PIPES", [15, 12, 0, 9, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 2],
-     [0, 0, 12, 0, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0], 45, 0, 3, (25, 400, 90, 180), (40, 400, 85, 180)),
+     [0, 0, 12, 0, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0], 45, 0, 3, (25, 400, 90, 180), (40, 400, 85, 180), (0, 0)),
     # every harmonic, falling as its number: a reed, two a few cents apart
     ("BRIGHT REED", [15, 8, 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1],
-     [15, 8, 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 80, 0, 9, (12, 500, 80, 240), (20, 500, 70, 240)),
+     [15, 8, 5, 4, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1], 80, 0, 9, (12, 500, 80, 240), (20, 500, 70, 240), (0, 0)),
     # a flute: the fundamental, a breath of the octave that comes in late
     ("SOFT FLUTE", [15, 3, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-     [15, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 35, 12, -4, (70, 600, 85, 400), (260, 800, 60, 400)),
+     [15, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 35, 12, -4, (70, 600, 85, 400), (260, 800, 60, 400), (0, 0)),
     # a chime: the note, and its twelfth and double octave struck over it
     ("OCTAVE CHIME", [15, 4, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-     [0, 0, 12, 10, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0], 75, 12, 5, (1, 1800, 0, 700), (1, 500, 0, 300)),
+     [0, 0, 12, 10, 0, 6, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0], 75, 12, 5, (1, 1800, 0, 700), (1, 500, 0, 300), (0, 0)),
     # a nasal lead: the middle harmonics strong, a voice's shape
     ("NASAL LEAD", [10, 6, 12, 15, 13, 9, 5, 3, 2, 1, 1, 0, 0, 0, 0, 0],
-     [8, 4, 9, 12, 10, 7, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0], 60, 0, 7, (15, 500, 85, 220), (30, 700, 70, 220)),
+     [8, 4, 9, 12, 10, 7, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0], 60, 0, 7, (15, 500, 85, 220), (30, 700, 70, 220), (0, 0)),
+    # a combo organ: a reedy eight-foot (every harmonic, falling), a hollow four-foot locked an octave over it (an
+    # organ's octaves come from one oscillator: no beat), on at once and off at once, and its vibrato
+    ("COMBO ORGAN", [15, 9, 7, 5, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1, 1, 1],
+     [15, 3, 8, 2, 4, 1, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0], 55, 12, 0, (4, 300, 100, 35), (4, 300, 100, 35), (6.3, 14)),
 ]
 
 
@@ -68,10 +73,12 @@ def main():
            "    uint32_t attack[2];             /* a generator: the rise a control tick, Q30 */",
            "    uint32_t decay[2], release[2];  /* the fall's multiplier a tick, Q32 */",
            "    int32_t sustain[2];             /* where the decay ends, Q30 */",
+           "    uint32_t vib_rate;              /* the vibrato: its phase a control tick (2^32 a cycle), 0 none */",
+           "    int32_t vib_depth;              /* and how far it moves the step each way, Q20 */",
            "    int16_t wave[2][HM_WAVE_POINTS];",
            "} hm_sound_t;",
            "static const hm_sound_t HM_SOUND[HM_SOUNDS] = {"]
-    for name, a, b, b_level, semis, cents, env_a, env_b in SOUNDS:
+    for name, a, b, b_level, semis, cents, env_a, env_b, vib in SOUNDS:
         full = [wave(a, 16, 256), wave(b, 16, 256)]
         # the two together never over full scale: the first generator's peak and the second's, weighted
         peak = [max(abs(x) for x in w) for w in full]
@@ -89,7 +96,8 @@ def main():
         out.append(f'    {{"{name}", {semis}, {int(round((2 ** (cents / 1200.0) - 1) * 2 ** 20))},')
         out.append(f"     {{{attack[0]}u, {attack[1]}u}}, {{{coefficient(envs[0][1])}u, {coefficient(envs[1][1])}u}}, "
                    f"{{{coefficient(envs[0][3])}u, {coefficient(envs[1][3])}u}}, "
-                   f"{{{int(envs[0][2] / 100.0 * 2 ** 30)}, {int(envs[1][2] / 100.0 * 2 ** 30)}}},")
+                   f"{{{int(envs[0][2] / 100.0 * 2 ** 30)}, {int(envs[1][2] / 100.0 * 2 ** 30)}}}, "
+                   f"{int(round(vib[0] * CTL / RATE * 2 ** 32))}u, {int(round((2 ** (vib[1] / 1200.0) - 1) * 2 ** 20))},")
         out.append("     {")
         for points in waves:
             rows = [", ".join(str(x) for x in points[i:i + 20]) for i in range(0, len(points), 20)]

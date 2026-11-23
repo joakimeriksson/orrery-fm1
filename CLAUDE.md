@@ -20,11 +20,17 @@ WORK.json is live progress (`python3 tools/work.py status`), and work/agents/ ho
 - `instruments/harmonic.c` — the HARMONIC voice (two generators of sixteen harmonics: the RMI Harmonic Synthesizer's
   principle), the lead's third instrument after the 2600 and the Synthex. It is written here, not copied from
   fm1-harbor; its waves are `instruments/harmonic_tables.h`, drawn by `tools/gen_harmonic_tables.py`.
-- `module/setups.h` — the factory setups (eighteen) and the effect patterns, one named-field block each: edit style
+- The player's own sequences and song (`seq_t` in `module/orrery.c`, `lead_song()` and `md_band_song_at()` in
+  `module/band.c`): four sequences of sixteen steps a setup on the lead track, the STEPS and SONG pages. The setup in
+  hand is saved with the settings record (the two are exactly its 240 bytes); every setup's in bank 2 on SAVE.
+- `module/setups.h` — the factory setups (nineteen) and the effect patterns, one named-field block each: edit style
   sets there. `tools/listen.py` (`uv run --with numpy --with pillow tools/listen.py [SETUP ...] [--png]`) renders the
   module itself natively (`tools/render_setups.c`, a second a setup) and prints each part's level, pitch classes and
   the mix's bands: balance and check keys with it before the emulator. Changing `set_t`'s layout needs new
   `SET_MAGIC` / `SETUPS_MAGIC`.
+- `MANUAL.md` — the player's manual: every page with its picture (`docs/manual/`, taken from fm1-emu by
+  `uv run --with pillow tools/manual_shots.py`) and where each sound and effect is changed. A control that changes
+  on the panel changes there too, and its picture is taken again.
 - `demo.py` — plays a minute in fm1-emu and records `build/demo/demo.wav`. `tools/spectrogram.py` draws a WAV:
   this is how we listen (`uv run --with numpy --with pillow tools/spectrogram.py IN OUT.png "title" [HOP_MS]`,
   then read the PNG). Neither system python here has numpy.

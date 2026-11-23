@@ -58,14 +58,14 @@ static int settings(void)
         CHECK(MD_HARMONIC.presets[p].settings[0] == p && !strcmp(MD_HARMONIC.presets[p].name, HM_SOUND[p].name));
         CHECK(!strcmp(md_harmonic_name(p), HM_SOUND[p].name) && strlen(HM_SOUND[p].name) <= 15u);
     }
-    uint8_t wire[2] = {5, 140}, back[2], bad[2] = {8, 100}, loud[2] = {0, 201};
+    uint8_t wire[2] = {5, 140}, back[2], bad[2] = {MD_HARMONIC_SOUNDS, 100}, loud[2] = {0, 201};
     CHECK(md_sound_apply(&inst, 1, wire, 2) == MD_OK && md_sound_encode(&inst, back, 2) == 2 && !memcmp(wire, back, 2));
     CHECK(md_sound_validate(&MD_HARMONIC, 1, bad, 2) == MD_ERR_RANGE && md_sound_validate(&MD_HARMONIC, 1, loud, 2) == MD_ERR_RANGE);
     CHECK(md_sound_validate(&MD_HARMONIC, 1, wire, 1) == MD_ERR_FORMAT);
     int32_t v = -1;
     CHECK(md_instrument_param_get(&inst, MD_HARMONIC_SOUND, &v) == MD_OK && v == 5);
     CHECK(md_instrument_param_get(&inst, MD_HARMONIC_LEVEL, &v) == MD_OK && v == 140);
-    md_event_t e = value(MD_HARMONIC_SOUND, 8);
+    md_event_t e = value(MD_HARMONIC_SOUND, MD_HARMONIC_SOUNDS);
     CHECK(md_instrument_event(&inst, &e) == MD_ERR_RANGE && state.sound == 5);
     return 0;
 }
@@ -120,15 +120,17 @@ static int spans_and_voices(void)
 {
     static int32_t one[8192], cut[8192];
     static const uint32_t SPANS[] = {1, 7, 16, 33, 64, 256};
-    for (uint32_t k = 0; k < sizeof SPANS / sizeof SPANS[0]; k++) {
+    for (uint32_t k = 0; k < 2u * sizeof SPANS / sizeof SPANS[0]; k++) {   /* the pluck, then the organ and its vibrato */
+        md_event_t sound = value(MD_HARMONIC_SOUND, k < sizeof SPANS / sizeof SPANS[0] ? 0 : 8);
         CHECK(md_instrument_init(&inst, &MD_HARMONIC, &state, sizeof state, MD_SAMPLE_RATE) == MD_OK);
         CHECK(md_instrument_init(&inst2, &MD_HARMONIC, &other, sizeof other, MD_SAMPLE_RATE) == MD_OK);
+        CHECK(md_instrument_event(&inst, &sound) == MD_OK && md_instrument_event(&inst2, &sound) == MD_OK);
         md_event_t a = note(MD_EVENT_NOTE_ON, 1, 60), b = note(MD_EVENT_NOTE_ON, 2, 67), off = note(MD_EVENT_NOTE_OFF, 1, 0);
         CHECK(md_instrument_event(&inst, &a) == MD_OK && md_instrument_event(&inst2, &a) == MD_OK);
-        (void)play(&inst, 3000, 256, one, NULL); (void)play(&inst2, 3000, SPANS[k], cut, NULL);
+        (void)play(&inst, 3000, 256, one, NULL); (void)play(&inst2, 3000, SPANS[k % (sizeof SPANS / sizeof SPANS[0])], cut, NULL);
         CHECK(md_instrument_event(&inst, &b) == MD_OK && md_instrument_event(&inst2, &b) == MD_OK);
         CHECK(md_instrument_event(&inst, &off) == MD_OK && md_instrument_event(&inst2, &off) == MD_OK);
-        (void)play(&inst, 5192, 256, one + 3000, NULL); (void)play(&inst2, 5192, SPANS[k], cut + 3000, NULL);
+        (void)play(&inst, 5192, 256, one + 3000, NULL); (void)play(&inst2, 5192, SPANS[k % (sizeof SPANS / sizeof SPANS[0])], cut + 3000, NULL);
         CHECK(!memcmp(one, cut, sizeof one));
     }
     CHECK(md_instrument_init(&inst, &MD_HARMONIC, &state, sizeof state, MD_SAMPLE_RATE) == MD_OK);

@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* HARMONIC: an additive voice after the RMI Harmonic Synthesizer's principle (1974): two generators, each a wave of
  * sixteen harmonics at set levels (its two rows of sliders), each with an envelope of its own, the second tuned
- * against the first. That one played a key at a time; this plays six, so a run's notes ring over each other. Eight
- * sounds (tools/gen_harmonic_tables.py draws them); a sound and a level are the whole setting. */
+ * against the first. That one played a key at a time; this plays six, so a run's notes ring over each other. Nine
+ * sounds (tools/gen_harmonic_tables.py draws them), the last a combo organ with its vibrato; a sound and a level are
+ * the whole setting. */
 #ifndef MD_HARMONIC_H
 #define MD_HARMONIC_H
 #include "core/instrument.h"
@@ -10,12 +11,13 @@
 #include "builtin_ids.h"
 #define MD_HARMONIC_SETTINGS_VERSION 1u
 #define MD_HARMONIC_SETTINGS_BYTES 2u   /* sound, level */
-#define MD_HARMONIC_SOUNDS 8u
+#define MD_HARMONIC_SOUNDS 9u
 #define MD_HARMONIC_VOICES 6u
 enum { MD_HARMONIC_SOUND = 1, MD_HARMONIC_LEVEL };
 typedef struct {
     md_note_token_t token;              /* the note that holds it; 0 once released */
-    uint32_t phase[2], step[2];
+    uint32_t phase[2], step[2], base[2];  /* base: the step without the vibrato */
+    uint32_t lfo;                       /* the vibrato's phase */
     int32_t env[2], slope[2], goal[2];  /* a generator's level now, its change a sample, where this tick ends: Q30 */
     const int16_t *wave[2];             /* each generator's wave at this key's size */
     uint8_t bits[2];                    /* that size: 8, 7 or 6 */

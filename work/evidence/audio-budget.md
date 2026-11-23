@@ -204,3 +204,29 @@ AMBIENT with lead notes measured 59.3 %.
 The residual over-budget reachable case reported above (variant 15) is now within budget, provided core 1 is
 available. Without it, the session renders the strings on core 0 and the earlier figures apply. A host without
 c1_run still has the old exposure.
+
+## 2026-11-22: rhythm keys together again
+
+The one-key rule above was set when a block of the band took 63 .. 68 % on one core and two keys measured 71 %. A
+combination is not a second machine: band.c's drums() puts every held key's hits into the one pattern, on the one
+Mini Pops' voices. Since then the parts render on both cores and in passes. Measured again in fm1-emu (this build,
+MAGNET at 138 BPM, the dearest band setup, six lead keys held, a minute each, no overrun in any):
+
+| Rhythm keys | Worst block |
+| --- | ---: |
+| one (Rumba, as the setup is) | 55.8 % |
+| two (Rumba + Bossanova) | 55.9 % |
+| two, with tambourine, guiro and quijada | 55.8 % |
+| four, with the three extras | 55.5 % |
+| all eight in four-four, with the three extras | 60.1 % |
+
+So the DRUMS page takes combinations again: a key by itself is its rhythm, a key pressed while another is held adds
+to it (orrery.c key_down). A saved combination is kept as it is. Not measured on the device.
+
+
+## 2026-11-23: the Synthex taken again (dock b3180ee), without its reverb's state
+
+`-DSC_HOST_REVERB` takes the engine's 64 KB of reverb lines out of the module's RAM: bss 206132 B of 278528 (it was
+272660). The engine's other changes (the layer's LFO, the oscillators' AC coupling) did not move a block: all
+nineteen setups in fm1-emu, a minute each with six lead keys held, no overrun, worst block 47.3 .. 56.0 % (OCTAVES
+56.0, PULSE 55.6, MAGNET 55.4, DRIFT 50.0, the others 47.3). Not measured on the device.
