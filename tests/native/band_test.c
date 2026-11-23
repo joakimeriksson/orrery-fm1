@@ -451,12 +451,61 @@ static int voicings_and_phrases(void)
     }
     return 0;
 }
+/* the player's sequences as the lead's patterns, and the song that chains them */
+static int own_sequences(void)
+{
+    md_band_settings_t set = {.bass_seq = 1, .chord_octave = 1, .song_on = 1, .seq_div = {0, 1, 2, 0}};
+    static const uint8_t A[16] = {60, 60 | MD_BAND_SEQ_TIE, 64 | MD_BAND_SEQ_TIE, 0, 67 | MD_BAND_SEQ_TIE, 0, 0, 0, 72, 0, 0, 0, 0, 0, 0, 55};
+    for (uint32_t k = 0; k < 16; k++) { set.seq[0][k] = A[k]; set.seq[1][k] = (uint8_t)(48u + k); }
+    for (uint32_t scene = 0; scene < 2u; scene++) {   /* BAND, where the lead is empty, and AMBIENT over its phrase */
+        set.scene = (uint8_t)scene; set.phrase = 1;
+        for (uint32_t k = 0; k < 8; k++) set.chord[k] = AMB_DRIFT[k];
+        CHECK(md_band_build(&set, &bank, &chain, &report) == MD_OK);
+        const md_seq_pattern_t *a = &bank.pattern[MD_BAND_LEAD][0], *b = &bank.pattern[MD_BAND_LEAD][1], *c = &bank.pattern[MD_BAND_LEAD][2];
+        CHECK(a->meta.length == 16 && a->meta.division == MD_DIV_16TH && a->meta.mode == MD_PATTERN_MONO);
+        CHECK(b->meta.division == MD_DIV_8TH && c->meta.division == MD_DIV_QUARTER);
+        CHECK(a->step[0].payload == 60 && a->step[0].gate && !(a->step[0].flags & (MD_STEP_TIE | MD_STEP_SLIDE)));   /* (55 before it, not tied) */
+        CHECK(a->step[1].payload == 60 && (a->step[1].flags & MD_STEP_TIE));          /* the same key: held on */
+        CHECK(a->step[2].payload == 64 && (a->step[2].flags & MD_STEP_SLIDE) && !(a->step[2].flags & MD_STEP_TIE));   /* another: slid to */
+        CHECK(!a->step[3].gate);                                                     /* a rest */
+        CHECK(a->step[4].payload == 67 && a->step[4].gate && !(a->step[4].flags & (MD_STEP_TIE | MD_STEP_SLIDE)));   /* tied to a rest: a note */
+        CHECK(a->step[8].payload == 72 && a->step[15].payload == 55 && !a->step[9].gate);
+        for (uint32_t k = 0; k < 16; k++) CHECK(b->step[k].payload == 48u + k && b->step[k].velocity == 100 && !c->step[k].gate);
+    }
+    set.song_on = 0; set.scene = MD_BAND_SCENE_BAND;                                  /* off: the lead is the player's alone */
+    CHECK(md_band_build(&set, &bank, &chain, &report) == MD_OK);
+    for (uint32_t k = 0; k < 16; k++) CHECK(!bank.pattern[MD_BAND_LEAD][0].step[k].gate);
+    /* the song: A (a bar), B (two), A, C (four): eight bars, round */
+    static const uint8_t SONG[MD_BAND_SONG_SLOTS] = {1, 2, 1, 3}, NONE[MD_BAND_SONG_SLOTS] = {0, 2, 1}, DIV[4] = {0, 1, 2, 0};
+    static const int8_t WANT[8] = {0, 1, 1, 0, 2, 2, 2, 2};
+    static const uint8_t SLOT[8] = {0, 1, 1, 2, 3, 3, 3, 3}, INTO[8] = {0, 0, 1, 0, 0, 1, 2, 3};
+    CHECK(md_band_seq_bars(0) == 1 && md_band_seq_bars(1) == 2 && md_band_seq_bars(2) == 4);
+    CHECK(md_band_song_at(NONE, DIV, 0, 0, 0) == -1 && md_band_song_next(NONE, DIV, 0, 0, 0) == -1);   /* nothing before the first end */
+    for (uint32_t bar = 0; bar < 40; bar++) {
+        uint32_t slot = 99, into = 99;
+        CHECK(md_band_song_at(SONG, DIV, bar, &slot, &into) == WANT[bar % 8u] && slot == SLOT[bar % 8u] && into == INTO[bar % 8u]);
+    }
+    /* scheduled as the module does, a launch landing on the next bar line: every bar plays what the song says */
+    uint8_t playing = (uint8_t)(SONG[0] - 1u);
+    uint32_t launches = 0;
+    for (uint32_t bar = 0; bar < 40; bar++) {
+        CHECK(playing == (uint8_t)WANT[bar % 8u]);
+        CHECK(md_band_song_next(SONG, DIV, bar, playing, 1) == -1);                   /* a launch pending: never another */
+        int next = md_band_song_next(SONG, DIV, bar, playing, 0);
+        if (next >= 0) { playing = (uint8_t)next; launches++; }
+    }
+    CHECK(launches == 20);                                                           /* four changes a round, five rounds */
+    static const uint8_t ONE[MD_BAND_SONG_SLOTS] = {2};                               /* one sequence: it loops by itself */
+    for (uint32_t bar = 0; bar < 8; bar++) CHECK(md_band_song_next(ONE, DIV, bar, 1, 0) == -1);
+    return 0;
+}
 int main(void)
 {
     RUN(chain_and_settings);
     RUN(ambient_combinations);
     RUN(ambient_chords);
     RUN(voicings_and_phrases);
+    RUN(own_sequences);
     RUN(bass_and_chords);
     RUN(drums);
     return 0;

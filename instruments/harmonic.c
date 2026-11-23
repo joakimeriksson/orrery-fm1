@@ -10,13 +10,13 @@ _Static_assert(HM_SOUNDS == MD_HARMONIC_SOUNDS, "the table is the sounds");
 #define SILENT (ONE >> 13)                      /* 78 dB down: a released generator stops here */
 static const uint32_t rates[]={MD_SAMPLE_RATE};
 static const char *const NAMES[MD_HARMONIC_SOUNDS]={"HARMONIC PLUCK","HOLLOW PLUCK","GLASS BELLS","PIPES","BRIGHT REED",
-    "SOFT FLUTE","OCTAVE CHIME","NASAL LEAD"};
+    "SOFT FLUTE","OCTAVE CHIME","NASAL LEAD","COMBO ORGAN"};
 static const uint8_t preset_bytes[MD_HARMONIC_SOUNDS][MD_HARMONIC_SETTINGS_BYTES]={
-    {0,100},{1,100},{2,100},{3,100},{4,100},{5,100},{6,100},{7,100}};
+    {0,100},{1,100},{2,100},{3,100},{4,100},{5,100},{6,100},{7,100},{8,100}};
 static const md_preset_t presets[]={
     {1,"HARMONIC PLUCK",preset_bytes[0],2},{2,"HOLLOW PLUCK",preset_bytes[1],2},{3,"GLASS BELLS",preset_bytes[2],2},
     {4,"PIPES",preset_bytes[3],2},{5,"BRIGHT REED",preset_bytes[4],2},{6,"SOFT FLUTE",preset_bytes[5],2},
-    {7,"OCTAVE CHIME",preset_bytes[6],2},{8,"NASAL LEAD",preset_bytes[7],2}
+    {7,"OCTAVE CHIME",preset_bytes[6],2},{8,"NASAL LEAD",preset_bytes[7],2},{9,"COMBO ORGAN",preset_bytes[8],2}
 };
 static const md_param_desc_t params[]={
     {.id=MD_HARMONIC_SOUND,.flags=MD_PARAM_ENUM,.name="SOUND",.min=0,.max=MD_HARMONIC_SOUNDS-1,.initial=0,
@@ -93,8 +93,9 @@ static void start(md_harmonic_state_t *s,md_note_token_t token,uint32_t key,uint
     v->token=token;v->key=(uint8_t)key;v->sound=s->sound;v->born=++s->count;v->left=0;
     if(second>127)second=127;
     if(second<0)second=0;
-    v->step[0]=HM_STEP[key];
-    v->step[1]=HM_STEP[second]+(uint32_t)(int32_t)(((int64_t)HM_STEP[second]*q->detune)>>20);
+    v->base[0]=HM_STEP[key];
+    v->base[1]=HM_STEP[second]+(uint32_t)(int32_t)(((int64_t)HM_STEP[second]*q->detune)>>20);
+    v->step[0]=v->base[0];v->step[1]=v->base[1];v->lfo=0;
     for(uint32_t g=0;g<2u;g++){
         if(!v->stage[g]){v->phase[g]=0;v->env[g]=0;}
         v->goal[g]=v->env[g];v->slope[g]=0;v->stage[g]=1;
@@ -135,6 +136,14 @@ static int event(void *state,const md_event_t *ev)
 static void tick(md_harmonic_voice_t *v)
 {
     const hm_sound_t *q=&HM_SOUND[v->sound];
+    if(q->vib_rate){                             /* the vibrato: a triangle on both generators' steps */
+        int32_t tri;
+        v->lfo+=q->vib_rate;
+        tri=(int32_t)(v->lfo>>16);
+        tri=tri<32768 ? tri-16384 : 49152-tri;   /* -16384 .. 16384 */
+        for(uint32_t g=0;g<2u;g++)
+            v->step[g]=v->base[g]+(uint32_t)(int32_t)(((((int64_t)v->base[g]*q->vib_depth)>>20)*tri)>>14);
+    }
     for(uint32_t g=0;g<2u;g++){
         int32_t e=v->goal[g],next=e;
         v->env[g]=e;

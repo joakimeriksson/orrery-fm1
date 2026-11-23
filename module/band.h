@@ -26,6 +26,14 @@ enum { MD_BAND_CHORD_NONE, MD_BAND_CHORD_MIN, MD_BAND_CHORD_MAJ, MD_BAND_CHORD_M
 #define MD_BAND_LINKS 8u
 
 #define MD_BAND_PHRASES 4u
+/* The player's own sequences, on the lead track: four of sixteen steps (A..D, the lead's patterns 0..3), and a song:
+ * up to sixteen slots, each one sequence played through once, round. A step is a byte: its key in the low seven
+ * bits (0 a rest), bit 7 tied to the step before (the same key: held on, no new attack; another key: slid to). A
+ * sequence's step is a sixteenth, an eighth or a quarter: it is one, two or four bars long. */
+#define MD_BAND_SEQS 4u
+#define MD_BAND_SEQ_STEPS 16u
+#define MD_BAND_SONG_SLOTS 16u
+#define MD_BAND_SEQ_TIE 0x80u
 typedef struct { uint8_t root, kind; } md_band_chord_t;   /* root 0..11, kind MD_BAND_CHORD_* */
 /* The effect sequence: what the effects box plays by itself. An event is one hit of a kit sound.
  *   at      when, in eighths from the start: 0..127 over AMBIENT's sixteen bars (bar b, eighth e: 8 b + e);
@@ -62,6 +70,9 @@ typedef struct {
                                         * a chord, an octave lower: for a sound that swells), 3 BELLS (a few short high
                                         * notes off the beat, left to ring), 4 CALLS (three notes and six bars of quiet) */
     int8_t phrase_shift;               /* the phrase's keys, semitones (a sound that speaks octaves over its key: -12) */
+    uint8_t song_on;                   /* the player's sequences play the lead track (in place of the phrase) */
+    uint8_t seq_div[MD_BAND_SEQS];     /* each sequence's step: 0 a sixteenth, 1 an eighth, 2 a quarter */
+    uint8_t seq[MD_BAND_SEQS][MD_BAND_SEQ_STEPS];
     md_band_fx_event_t fx[MD_BAND_FX_EVENTS];   /* the effect sequence (both scenes) */
 } md_band_settings_t;
 
@@ -89,6 +100,14 @@ uint32_t md_band_link_at(const md_band_chain_t *, uint32_t bar);
  * launch (all from the session snapshot). Queuing any time in the bar before a link change lands the
  * change exactly on the bar line; a whole bar of main-loop slack. A pending launch is never replaced. */
 int md_band_next_link(const md_band_chain_t *, uint32_t bar, uint8_t pattern, uint8_t queued, uint8_t requested);
+/* A sequence's length in bars for its step (0, 1, 2: one, two, four). */
+uint32_t md_band_seq_bars(uint32_t div);
+/* The song: the sequence (0..3) that bar `bar` from the start plays, round the slots that are set (a slot: 0 the
+ * song's end, 1..4 A..D), each for its sequence's length; -1 when no slot is set. *slot, if given, is the slot and
+ * *into the bars into it. */
+int md_band_song_at(const uint8_t song[MD_BAND_SONG_SLOTS], const uint8_t div[MD_BAND_SEQS], uint32_t bar, uint32_t *slot, uint32_t *into);
+/* Main loop, while running: the lead pattern to queue now as a next-bar launch, or -1 (as md_band_next_link). */
+int md_band_song_next(const uint8_t song[MD_BAND_SONG_SLOTS], const uint8_t div[MD_BAND_SEQS], uint32_t bar, uint8_t pattern, uint8_t queued);
 /* The key an effect event's degree plays: the pentatonic of the home chord (the first chord that is not NONE; major
  * on MAJ and MAJ7, else minor; C minor without one), from its root in the C4 octave. */
 uint32_t md_band_fx_key(const md_band_settings_t *, uint32_t degree);

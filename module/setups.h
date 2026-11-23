@@ -29,8 +29,9 @@ enum { L_SOFT, L_HARP };                         /* the lead: SOFT LEAD, LASER H
 /* one of the Synthex's other factory sounds by its number there (sc_presets: 4 Pan flutes, 28 Chimes, 29 Vibes,
  * 40 Cathedral choir, 51 Solo Violin, 75 Filtered brass: a brass that swells in half a second, ...; not 36) */
 #define L_SX(n) (12u + ((n) < 36u ? (n) : (n) - 1u))
-/* or one of the HARMONIC voice's eight (instruments/harmonic.c) */
-enum { HM_PLUCK, HM_HOLLOW_PLUCK, HM_GLASS_BELLS, HM_PIPES, HM_BRIGHT_REED, HM_SOFT_FLUTE, HM_OCTAVE_CHIME, HM_NASAL_LEAD };
+/* or one of the HARMONIC voice's nine (instruments/harmonic.c) */
+enum { HM_PLUCK, HM_HOLLOW_PLUCK, HM_GLASS_BELLS, HM_PIPES, HM_BRIGHT_REED, HM_SOFT_FLUTE, HM_OCTAVE_CHIME, HM_NASAL_LEAD,
+       HM_COMBO_ORGAN };
 #define L_HM(n) (91u + (n))
 enum { PH_NONE, PH_HARP, PH_LONG, PH_BELLS, PH_CALLS };   /* AMBIENT's lead phrase (band.h) */
 /* the halls (orrery.c's HALLS): the reverb's kind, size and damping as one choice */
@@ -181,7 +182,7 @@ static const fx_pattern_t FX_PATTERNS[N_FX_PATTERNS] = {
  * copied and none named after one. Seven of the first nine AMBIENT setups had the same eight chords in another key;
  * now each has its own harmony and its own hall: an Aeolian drift, a Dorian sea, a harmonic-minor city with a brass
  * that swells, a major-key hymn on vibes, a Phrygian cave, a descending-bass storm, a modal machine room, open
- * fifths on ice, a pentatonic temple, a Lydian prism. AMBIENT plays the eight chords two bars each over a held bass, voiced so a
+ * fifths on ice, a pentatonic temple, a Lydian prism, an evening in E flat. AMBIENT plays the eight chords two bars each over a held bass, voiced so a
  * tone two chords share stays where it is (band.c: voiced); BAND plays the 1601 sequence with a chord on each of its
  * links, on the link's root: a minor chord where the line stays on one chord a bar, SUS2 or a bare fifth where it
  * walks through others (a third would rub against them). Levels are percent of each part's fader and were set by
@@ -202,8 +203,9 @@ typedef struct {
     uint8_t hall, reverb, lead_reverb;           /* the hall (H_...); the strings' (and BAND's parts') send to it, the lead's */
     uint8_t echo, echo_feedback, echo_tone, echo_strings, echo_lead;   /* E_..., then percent */
     uint8_t motion;                              /* the slow filter sweeps' depth */
+    uint8_t lead_phaser, box_phaser;             /* the phasers on the lead and on the effects box: 0 off .. 10 */
 } setup_t;
-#define N_SETUPS 18u
+#define N_SETUPS 19u
 static const setup_t SETUPS[N_SETUPS] = {
     {   /* 1: the string ensemble through its slow phaser in C minor (Aeolian: i v VI III, then iv), a far Bossa Nova,
          * droplets and a run up each chord; the default */
@@ -211,9 +213,9 @@ static const setup_t SETUPS[N_SETUPS] = {
         .chord = {{nC, CH_MIN}, {nG, CH_MIN7}, {nAb, CH_MAJ7}, {nEb, CH_MAJ}, {nC, CH_MIN}, {nF, CH_MIN7}, {nAb, CH_MAJ7}, {nG, CH_SUS4}},
         .strings = V_STRINGS, .octave = 1, .attack = 85, .release = 90, .depth = 100, .phaser = 35,
         .lead = L_SOFT, .run = 1, .bass = P_WARM_BASS, .rhythm = R_BOSSA, .extras_level = 70, .balance = 30, .fx = FXP_DROPLETS,
-        .strings_level = 86, .lead_level = 100, .bass_level = 16, .drums_level = 39, .box_level = 30, .wind_level = 50, .wind_colour = 45,
+        .strings_level = 86, .lead_level = 100, .bass_level = 16, .drums_level = 39, .box_level = 36, .wind_level = 50, .wind_colour = 45,
         .hall = H_BIG_HALL, .reverb = 60, .lead_reverb = 50, .echo = E_8TH_DOT, .echo_feedback = 62, .echo_tone = 32, .echo_strings = 22, .echo_lead = 45,
-        .motion = 50 },
+        .motion = 50, .box_phaser = 5 },
     {   /* 2: the classic band: the Eminent through its slow phaser, the root-and-octave bass, Rock 1, the 2600 lead
          * in a dotted echo */
         .name = "PULSE", .about = "STRINGS, ROCK 1, 2600 LEAD", .scene = BAND, .tempo = 120, .sequence = Q_ROOT_PULSE,
@@ -366,8 +368,18 @@ static const setup_t SETUPS[N_SETUPS] = {
         .chord = {{nG, CH_MAJ7}, {nA, CH_MAJ}, {nB, CH_MIN7}, {nA, CH_MAJ}, {nG, CH_MAJ7}, {nE, CH_MIN7}, {nFs, CH_MIN7}, {nA, CH_SUS4}},
         .strings = V_STRINGS, .octave = 1, .attack = 55, .release = 70, .depth = 60, .phaser = 55,
         .lead = L_HM(HM_PLUCK), .phrase = PH_HARP, .bass = P_WARM_BASS, .rhythm = R_NONE, .extras_level = 70, .balance = 30, .fx = FXP_BUBBLES,
-        .strings_level = 90, .lead_level = 90, .bass_level = 16, .drums_level = 0, .box_level = 30, .wind_level = 20, .wind_colour = 60,
+        .strings_level = 90, .lead_level = 100, .bass_level = 16, .drums_level = 0, .box_level = 36, .wind_level = 20, .wind_colour = 60,
         .hall = H_BIG_HALL, .reverb = 60, .lead_reverb = 55, .echo = E_8TH_DOT, .echo_feedback = 55, .echo_tone = 45, .echo_strings = 15, .echo_lead = 55,
-        .motion = 60 },
+        .motion = 60, .lead_phaser = 4, .box_phaser = 6 },
+    {   /* 19: evening: E flat major turning through its relative minor and never closing (the last chord hangs), the
+         * full string ensemble under a combo organ that holds long notes with its vibrato through the lead's phaser,
+         * sweeps and whistles through the box's, in a plate */
+        .name = "VESPER", .about = "COMBO ORGAN, PHASERS", .scene = AMB, .tempo = 58,
+        .chord = {{nEb, CH_MAJ7}, {nC, CH_MIN7}, {nAb, CH_MAJ7}, {nBb, CH_SUS4}, {nEb, CH_MAJ}, {nG, CH_MIN7}, {nAb, CH_MAJ7}, {nBb, CH_SUS2}},
+        .strings = V_FULL, .octave = 1, .attack = 85, .release = 90, .depth = 100, .phaser = 30,
+        .lead = L_HM(HM_COMBO_ORGAN), .phrase = PH_LONG, .bass = P_WARM_BASS, .rhythm = R_NONE, .extras_level = 70, .balance = 30, .fx = FXP_SPACE,
+        .strings_level = 72, .lead_level = 60, .bass_level = 16, .drums_level = 0, .box_level = 34, .wind_level = 35, .wind_colour = 40,
+        .hall = H_PLATE, .reverb = 55, .lead_reverb = 50, .echo = E_4TH, .echo_feedback = 45, .echo_tone = 40, .echo_strings = 15, .echo_lead = 35,
+        .motion = 50, .lead_phaser = 7, .box_phaser = 6 },
 };
 #endif
