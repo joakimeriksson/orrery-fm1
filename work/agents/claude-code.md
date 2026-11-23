@@ -645,3 +645,25 @@ and makers' names (Hammond 1 (John Lord), Mini Moog Lead ...), against the namin
 - Limits, in the manual: one sequenced part (the lead's sound); absolute notes (they do not follow the chords); no
   recording; a change of setup still restarts the band.
 
+
+2026-11-23, the Synthex without its reverb's RAM. The owner asked why the module's RAM was nearly gone (5.9 KiB
+left), then: "but there was no reverb in the original synthex?" and "do that and build with no reverb".
+- Where it went (the symbol table of crc 2457ddbc): the Synthex's state 81.7 KiB, 64.1 of it the engine's reverb
+  lines, which the adapter switches off in every patch; the session 70.2; the echo 24.1; the Synthex's lane 20.0;
+  the session's reverb 19.1. The original has no reverb: the engine's is the app's (fx/reverb.ts), on in eleven of
+  the forty added memories (40..79), in none of the forty factory panel records.
+- `./take.py --scintilla-ref origin/main` (dock b3180ee): six engines/sc_* files; the other engines compared equal.
+  This engine has SC_HOST_REVERB (synthex_config.h has set it since the first take). With it came dock's corrected
+  decoding of the factory panel records (cutoff and key tracking, the LFO's depths, the filter's sustain, three
+  presets against the recording), the layer's LFO as one (sync on a first key, silent voices advance), and the
+  oscillators' AC coupling.
+- What that did to the sounds, a held G4 at level 40 through the adapter, both engines (scratch sxcmp/): the forty
+  memories within 0.4 dB held; the panel records mostly within 1 dB. The laser harp (Ring mod.) came 2.1 dB down:
+  its level 40 -> 51. Three moved more than 3 dB and are put back by level: Electric piano II (+5.6: 21), Whistle
+  (-3.3: 58), Clavichord I (-4.5, and it falls away now: 67). Left as they are, about 2 dB: Metallic, Church organ,
+  Electronic organ, Take-off, Clavichord II; Landing's first half second (-5.4, its sweep). The setups' Synthex
+  sounds: Filtered brass +0.1, Vibes +0.4, Chimes -0.8, Pan flutes 0.0.
+- module.dock crc 6081af3e: code 185956 B, bss 206132 of 278528 (70.7 KiB left; it was 5.9). 17 native suites,
+  orrery_emu.py all passed (worst 55.6 %). All nineteen setups a minute each in fm1-emu, six lead keys held: no
+  overrun, worst block 47.3 .. 56.0 %, as before. build/listen/scenes rendered again. Not heard, not on a device.
+- Not done, small now: first_bank (7.9 KiB, used only at start) and init's second copy of the setups (2.8 KiB).

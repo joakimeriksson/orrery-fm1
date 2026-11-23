@@ -319,12 +319,18 @@ static int send_list(uint8_t track, const int32_t (*list)[2], uint32_t n)
 #define HM_FIRST (SX_FIRST + MD_SYNTHEX_PATCHES - 1u)   /* the HARMONIC sounds after those */
 #define N_LEAD_SOUNDS (HM_FIRST + MD_HARMONIC_SOUNDS)
 /* the Synthex's own level: its patches are loud, and not equally: the struck and the soft ones (a held G4 measured,
- * tools scratch sx.c) come up to where the brass and the laser harp sit at 40 */
+ * tools scratch sx.c) come up to where the brass and the laser harp sit at 40. The engine taken at dock b3180ee
+ * decodes the factory panel records as corrected against the recordings; the laser harp and the three that moved
+ * more than 3 dB by it are put back where they were (the same G4, both engines) */
 static int32_t sx_level(uint32_t patch)
 {
     switch (patch) {
+    case 23: return 67;                          /* Clavichord I: it falls away now */
+    case 27: return 21;                          /* Electric piano II */
     case 28: return 55;                          /* Chimes */
     case 29: return 85;                          /* Vibes */
+    case 36: return 51;                          /* Ring mod., the laser harp */
+    case 39: return 58;                          /* Whistle */
     case 60: case 73: case 74: case 44: return 80;   /* Plink, Marimba, Harp, Echo: plucked, they fall away */
     default: return 40;
     }

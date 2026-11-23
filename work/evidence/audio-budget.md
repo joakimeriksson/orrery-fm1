@@ -223,3 +223,10 @@ MAGNET at 138 BPM, the dearest band setup, six lead keys held, a minute each, no
 So the DRUMS page takes combinations again: a key by itself is its rhythm, a key pressed while another is held adds
 to it (orrery.c key_down). A saved combination is kept as it is. Not measured on the device.
 
+
+## 2026-11-23: the Synthex taken again (dock b3180ee), without its reverb's state
+
+`-DSC_HOST_REVERB` takes the engine's 64 KB of reverb lines out of the module's RAM: bss 206132 B of 278528 (it was
+272660). The engine's other changes (the layer's LFO, the oscillators' AC coupling) did not move a block: all
+nineteen setups in fm1-emu, a minute each with six lead keys held, no overrun, worst block 47.3 .. 56.0 % (OCTAVES
+56.0, PULSE 55.6, MAGNET 55.4, DRIFT 50.0, the others 47.3). Not measured on the device.

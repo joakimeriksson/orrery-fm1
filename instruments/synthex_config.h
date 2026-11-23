@@ -5,8 +5,9 @@
  *                 a note, at a time; four voices beside the strings measured 79.6 % of a block)
  *   SC_LANES 1    one render lane: one Synthex, on one core
  * Not SC_SMALL_OSC: it runs every oscillator through the synced loop, 10-18 % of a block more (dock's module.cfg).
- * SC_HOST_REVERB is for an engine that has the switch; the one taken now (dock's origin/main) always carries its
- * reverb (64 KB of RAM), which the adapter switches off in every patch: the session's reverb serves every part. */
+ * SC_HOST_REVERB  the engine without its reverb's state (64 KB of RAM) and render pass. The original has no reverb
+ *                 (its chorus is its one effect): the engine's is the app's, on in eleven of the forty added
+ *                 memories. The adapter switches it off in every patch: the session's reverb serves every part. */
 #ifndef MD_SYNTHEX_CONFIG_H
 #define MD_SYNTHEX_CONFIG_H
 #ifndef SC_VOICES
